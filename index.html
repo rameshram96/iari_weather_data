@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IARI Weather Dashboard — New Delhi</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root {
+    --bg:        #0a0e0f;
+    --bg2:       #111618;
+    --bg3:       #181e20;
+    --border:    rgba(255,255,255,0.07);
+    --border2:   rgba(255,255,255,0.13);
+    --green:     #3ddc84;
+    --green-dim: rgba(61,220,132,0.12);
+    --green-glow:rgba(61,220,132,0.25);
+    --amber:     #f5a623;
+    --amber-dim: rgba(245,166,35,0.12);
+    --red:       #e05252;
+    --blue:      #5ba4f5;
+    --blue-dim:  rgba(91,164,245,0.12);
+    --text:      #e8ede9;
+    --text2:     #8a9e8e;
+    --text3:     #4e6052;
+    --mono:      'Space Mono', monospace;
+    --sans:      'DM Sans', sans-serif;
+    --radius:    8px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { font-size: 14px; scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SCAN LINE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.04) 3px,
+      rgba(0,0,0,0.04) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ── LAYOUT ── */
+  .shell {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.5rem 3rem;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 1.5rem 0 1.25rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+  }
+
+  .header-left { flex: 1; }
+
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--green);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .header-badge::before {
+    content: '';
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green-glow);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--green-glow); }
+    50%       { opacity: 0.6; box-shadow: 0 0 3px var(--green-glow); }
+  }
+
+  h1 {
+    font-family: var(--sans);
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  .header-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .header-right {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .last-updated {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    line-height: 1.8;
+  }
+
+  #live-clock {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    color: var(--green);
+    letter-spacing: 0.06em;
+  }
+
+  /* ── NAV TABS ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+
+  .tab-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .tab-btn:hover { color: var(--text2); }
+
+  .tab-btn.active {
+    color: var(--green);
+    background: var(--green-dim);
+  }
+
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 2px;
+    background: var(--green);
+  }
+
+  /* ── PANELS ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── METRIC CARDS ── */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0,1fr));
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 1100px) { .metrics-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px)  { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .mcard {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .mcard:hover { border-color: var(--border2); }
+
+  .mcard::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent, var(--green));
+    opacity: 0.6;
+  }
+
+  .mcard-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text3);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .mcard-value {
+    font-family: var(--mono);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .mcard-unit {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 400;
+    margin-left: 3px;
+  }
+
+  .mcard-sub {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 5px;
+  }
+
+  /* ── TWO-COLUMN LAYOUT ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 1.2rem;
+    margin-bottom: 1.2rem;
+  }
+
+  @media (max-width: 1000px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── CHART CARD ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.4rem;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    gap: 1rem;
+  }
+
+  .card-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+
+  .range-btns { display: flex; gap: 4px; }
+
+  .range-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 9px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.06em;
+  }
+
+  .range-btn:hover { border-color: var(--border2); color: var(--text2); }
+  .range-btn.active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+
+  .chart-wrap { position: relative; width: 100%; height: 220px; }
+
+  /* ── FORECAST CARDS ── */
+  .forecast-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0,1fr));
+    gap: 8px;
+  }
+
+  @media (max-width: 700px) { .forecast-row { grid-template-columns: repeat(3, 1fr); } }
+
+  .fcard {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.85rem 0.7rem;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+
+  .fcard.today { border-color: rgba(61,220,132,0.3); background: var(--green-dim); }
+  .fcard:hover { border-color: var(--border2); }
+
+  .fcard-date {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  .fcard.today .fcard-date { color: var(--green); }
+
+  .fcard-icon { font-size: 1.4rem; margin-bottom: 4px; }
+
+  .fcard-temp {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .fcard-temp span { color: var(--blue); font-weight: 400; }
+
+  .fcard-meta {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  /* ── ADVISORY BOX ── */
+  .advisory {
+    background: var(--amber-dim);
+    border: 1px solid rgba(245,166,35,0.25);
+    border-radius: var(--radius);
+    padding: 0.85rem 1rem;
+    margin-top: 1rem;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .advisory-icon { color: var(--amber); font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+  .advisory-text {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--amber);
+    line-height: 1.6;
+  }
+
+  .advisory-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 3px;
+    opacity: 0.7;
+  }
+
+  /* ── DATA TABLE ── */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  thead tr {
+    border-bottom: 1px solid var(--border2);
+  }
+
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-weight: 400;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  tbody tr:hover { background: var(--bg3); }
+  tbody tr:last-child { border-bottom: none; }
+
+  td {
+    padding: 7px 12px;
+    color: var(--text2);
+  }
+
+  td:first-child { color: var(--text); }
+
+  .td-rain { color: var(--blue); font-weight: 700; }
+  .td-hot  { color: var(--amber); }
+  .td-cold { color: var(--blue); }
+
+  .cond-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .cond-rain   { background: var(--blue-dim); color: var(--blue); }
+  .cond-clear  { background: var(--green-dim); color: var(--green); }
+  .cond-fog    { background: rgba(138,158,142,0.1); color: var(--text3); }
+  .cond-storm  { background: var(--amber-dim); color: var(--amber); }
+
+  /* ── INFERENCE PANEL ── */
+  .inference-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+  }
+
+  @media (max-width: 900px) { .inference-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 580px) { .inference-grid { grid-template-columns: 1fr; } }
+
+  .infer-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.2rem;
+  }
+
+  .infer-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 0.6rem;
+  }
+
+  .infer-big {
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .infer-unit {
+    font-size: 13px;
+    color: var(--text3);
+    font-weight: 400;
+    margin-left: 4px;
+  }
+
+  .infer-desc {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* progress bar */
+  .progress-track {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s ease;
+    background: var(--green);
+  }
+
+  .progress-fill.amber { background: var(--amber); }
+  .progress-fill.red   { background: var(--red); }
+  .progress-fill.blue  { background: var(--blue); }
+
+  /* ── CONFIG PANEL (inference settings) ── */
+  .config-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 1.2rem;
+  }
+
+  @media (max-width: 800px) { .config-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .config-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 0.9rem;
+  }
+
+  .config-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .config-item input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border2);
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 700;
+    outline: none;
+    padding: 2px 0;
+    transition: border-color 0.2s;
+  }
+
+  .config-item input:focus { border-bottom-color: var(--green); }
+
+  /* ── RAINFALL PANEL ── */
+  .rainfall-chart-wrap { position: relative; width: 100%; height: 260px; }
+
+  /* ── DOWNLOAD BTN ── */
+  .dl-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+
+  .dl-btn:hover {
+    border-color: var(--green);
+    color: var(--green);
+    background: var(--green-dim);
+  }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.6rem 0;
+    border-top: 1px solid var(--border);
+    margin-top: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .status-item {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.06em;
+  }
+
+  .status-item span { color: var(--text2); }
+
+  /* ── LOADING STATE ── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--bg3) 25%, var(--bg2) 50%, var(--bg3) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+  }
+
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .empty-state strong {
+    display: block;
+    font-size: 1rem;
+    color: var(--text2);
+    margin-bottom: 0.5rem;
+  }
+
+  /* ── TOOLTIP ── */
+  .tooltip-hint {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--text3);
+    font-style: italic;
+    margin-top: 0.4rem;
+  }
+
+  /* full-width helper */
+  .full { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ══ HEADER ══ -->
+  <header>
+    <div class="header-left">
+      <div class="header-badge">Live · Auto-updating</div>
+      <h1>IARI Meteorological Dashboard</h1>
+      <div class="header-sub">
+        ICAR–Indian Agricultural Research Institute · New Delhi
+        &nbsp;·&nbsp; 28°38'23"N, 77°09'27"E · Alt 228.61 m
+      </div>
+    </div>
+    <div class="header-right">
+      <div id="live-clock">--:--:--</div>
+      <div class="last-updated">
+        Data: Division of Agricultural Physics<br/>
+        <span id="last-date">Loading…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ TODAY'S METRICS ══ -->
+  <div class="metrics-grid" id="metrics-grid">
+    <div class="mcard skeleton" style="height:88px"></div>
+    <div class="mcard skeleton" style="height:88px"></div>
+    <div class="mcard skeleton" style="height:88px"></div>
+    <div class="mcard skeleton" style="height:88px"></div>
+    <div class="mcard skeleton" style="height:88px"></div>
+    <div class="mcard skeleton" style="height:88px"></div>
+  </div>
+
+  <!-- ══ TABS ══ -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('observations', this)">Observations</button>
+    <button class="tab-btn" onclick="switchTab('forecast', this)">Forecast</button>
+    <button class="tab-btn" onclick="switchTab('inference', this)">Agronomic Inference</button>
+    <button class="tab-btn" onclick="switchTab('rainfall', this)">Rainfall History</button>
+    <button class="tab-btn" onclick="switchTab('data', this)">Raw Data</button>
+  </div>
+
+  <!-- ══ PANEL: OBSERVATIONS ══ -->
+  <div id="panel-observations" class="panel active">
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Temperature &amp; Rainfall — Daily</span>
+          <div class="range-btns">
+            <button class="range-btn active" onclick="setRange(14, this)">14D</button>
+            <button class="range-btn" onclick="setRange(30, this)">30D</button>
+            <button class="range-btn" onclick="setRange(90, this)">90D</button>
+            <button class="range-btn" onclick="setRange(0, this)">All</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="tempRainChart"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Relative Humidity</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="rhChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Bright Sunshine &amp; Evaporation</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="bssChart"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Wind Speed</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="windChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL: FORECAST ══ -->
+  <div id="panel-forecast" class="panel">
+    <div class="card" style="margin-bottom:1.2rem">
+      <div class="card-header">
+        <span class="card-title">5-Day IMD Multimodel Ensemble Forecast</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--text3)">IMD RMC · Agromet Advisory Unit</span>
+      </div>
+      <div class="forecast-row" id="forecast-row">
+        <!-- Populated by JS -->
+      </div>
+      <div class="advisory" id="advisory-box">
+        <div class="advisory-icon">⚠</div>
+        <div>
+          <div class="advisory-label">Special Advisory</div>
+          <div class="advisory-text" id="advisory-text">Loading advisory…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Forecast Temperature Range</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="forecastTempChart"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Forecast Rainfall &amp; RH</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="forecastRainChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL: AGRONOMIC INFERENCE ══ -->
+  <div id="panel-inference" class="panel">
+
+    <div class="card" style="margin-bottom:1.2rem">
+      <div class="card-header">
+        <span class="card-title">Crop Parameters (configurable)</span>
+      </div>
+      <div class="config-grid">
+        <div class="config-item">
+          <div class="config-label">T base (°C)</div>
+          <input type="number" id="cfg-tbase" value="10" step="0.5" onchange="updateInference()"/>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Heat stress threshold (°C)</div>
+          <input type="number" id="cfg-heat" value="35" step="0.5" onchange="updateInference()"/>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Cold stress threshold (°C)</div>
+          <input type="number" id="cfg-cold" value="10" step="0.5" onchange="updateInference()"/>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Season window (days)</div>
+          <input type="number" id="cfg-window" value="90" step="5" onchange="updateInference()"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="inference-grid" id="inference-grid">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Cumulative GDD over Season Window</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="gddChart"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">ET₀ vs Rainfall (water balance)</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="waterChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL: RAINFALL HISTORY ══ -->
+  <div id="panel-rainfall" class="panel">
+    <div class="card" style="margin-bottom:1.2rem">
+      <div class="card-header">
+        <span class="card-title">Monthly &amp; Annual Rainfall (mm)</span>
+      </div>
+      <div class="rainfall-chart-wrap">
+        <canvas id="rainfallChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Monthly Breakdown by Year</span>
+      </div>
+      <div class="table-wrap">
+        <table id="rainfall-table">
+          <thead>
+            <tr>
+              <th>Year</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th>
+              <th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th>
+              <th>Oct</th><th>Nov</th><th>Dec</th><th>Total</th>
+            </tr>
+          </thead>
+          <tbody id="rainfall-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL: RAW DATA ══ -->
+  <div id="panel-data" class="panel">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Observation Log</span>
+        <a class="dl-btn" id="dl-btn" href="data/iari_weather.csv" download>
+          ↓ Download CSV
+        </a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Max Temp °C</th><th>Min Temp °C</th>
+              <th>Rainfall mm</th><th>Wind km/h</th>
+              <th>Wind Dir I</th><th>Wind Dir II</th>
+              <th>Cond I</th><th>Cond II</th>
+              <th>RH-I %</th><th>RH-II %</th>
+              <th>BSS hrs</th><th>Evap mm</th>
+            </tr>
+          </thead>
+          <tbody id="raw-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STATUS BAR ══ -->
+  <div class="status-bar">
+    <div class="status-item">Records: <span id="stat-records">—</span></div>
+    <div class="status-item">Date range: <span id="stat-range">—</span></div>
+    <div class="status-item">Total rainfall (YTD): <span id="stat-ytd">—</span></div>
+    <div class="status-item">Source: <span>IARI BMS · Division of Agricultural Physics</span></div>
+    <div class="status-item" style="margin-left:auto">
+      <a href="https://www.iari.res.in/bms/daily-weather/" target="_blank" style="color:var(--text3);text-decoration:none;font-family:var(--mono);font-size:10px;">↗ IARI Source</a>
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CONFIGURATION
+══════════════════════════════════════════════════════════════ */
+const CSV_PATH = 'data/iari_weather.csv';
+const FORECAST_PATH = 'data/forecast.json';
+
+/* ══════════════════════════════════════════════════════════════
+   SEED / DEMO DATA — used when CSVs are not yet populated
+   Replace this with real scraped data once the scraper is live.
+══════════════════════════════════════════════════════════════ */
+const SEED_OBS = [
+  {date:'2026-03-14',tmax:31.3,tmin:16.9,rain:0.0,wind:6.5,wdir1:'SE',wdir2:'N',cond1:1,cond2:0,rh1:88,rh2:32,bss:5.8,evap:4.6},
+  {date:'2026-03-15',tmax:33.0,tmin:17.0,rain:0.3,wind:4.9,wdir1:'E',wdir2:'NW',cond1:2,cond2:1,rh1:92,rh2:45,bss:6.2,evap:4.5},
+  {date:'2026-03-16',tmax:29.0,tmin:14.4,rain:0.0,wind:7.1,wdir1:'SE',wdir2:'S',cond1:1,cond2:0,rh1:82,rh2:40,bss:6.4,evap:4.0},
+  {date:'2026-03-17',tmax:31.0,tmin:15.6,rain:0.0,wind:5.5,wdir1:'C',wdir2:'NW',cond1:1,cond2:0,rh1:84,rh2:38,bss:8.7,evap:4.7},
+  {date:'2026-03-18',tmax:31.1,tmin:15.2,rain:0.0,wind:3.2,wdir1:'C',wdir2:'N',cond1:1,cond2:1,rh1:70,rh2:36,bss:6.9,evap:4.5},
+  {date:'2026-03-19',tmax:32.9,tmin:16.0,rain:9.9,wind:5.2,wdir1:'C',wdir2:'SW',cond1:2,cond2:2,rh1:94,rh2:67,bss:6.4,evap:4.5},
+  {date:'2026-03-20',tmax:24.9,tmin:14.7,rain:6.5,wind:6.4,wdir1:'NW',wdir2:'W',cond1:5,cond2:2,rh1:98,rh2:83,bss:0.5,evap:3.8},
+  {date:'2026-03-21',tmax:21.4,tmin:12.6,rain:2.8,wind:3.6,wdir1:'C',wdir2:'N',cond1:4,cond2:2,rh1:96,rh2:51,bss:0.3,evap:3.5},
+  {date:'2026-03-22',tmax:26.4,tmin:15.5,rain:0.0,wind:4.8,wdir1:'C',wdir2:'NW',cond1:4,cond2:0,rh1:90,rh2:48,bss:6.2,evap:3.8},
+  {date:'2026-03-23',tmax:28.2,tmin:16.0,rain:0.4,wind:3.5,wdir1:'C',wdir2:'',cond1:5,cond2:0,rh1:98,rh2:0,bss:8.8,evap:4.2},
+];
+
+const SEED_FORECAST = {
+  generated: '2026-03-23',
+  advisory: 'Generally cloudy sky. Possibility of very light rain accompanied with thunderstorm/lightning.',
+  days: [
+    {date:'2026-03-21',tmax:28,tmin:14,rain:0.0,rh_max:90,rh_min:60,wind:7,wind_dir:'ENE',cloud:4},
+    {date:'2026-03-22',tmax:30,tmin:16,rain:0.0,rh_max:88,rh_min:40,wind:10,wind_dir:'ENE',cloud:5},
+    {date:'2026-03-23',tmax:31,tmin:17,rain:2.0,rh_max:95,rh_min:50,wind:10,wind_dir:'ENE',cloud:7},
+    {date:'2026-03-24',tmax:32,tmin:17,rain:0.0,rh_max:85,rh_min:35,wind:15,wind_dir:'NNW',cloud:4},
+    {date:'2026-03-25',tmax:33,tmin:17,rain:0.0,rh_max:83,rh_min:35,wind:10,wind_dir:'WNW',cloud:4},
+  ]
+};
+
+const SEED_RAINFALL = [
+  {year:2021,months:[56.3,7.0,2.0,5.2,214.6,50.1,497.1,257.4,528.6,127.7,0.0,9.6],total:1755.6},
+  {year:2022,months:[141.9,30.0,0.0,0.0,74.8,22.8,325.6,168.2,191.4,134.9,0.0,0.0],total:1089.6},
+  {year:2023,months:[33.4,0.0,105.0,10.9,118.3,234.8,366.0,181.2,85.7,4.0,12.4,0.0],total:1151.7},
+  {year:2024,months:[0.0,28.8,11.2,15.0,0.0,117.0,349.8,370.4,163.3,0.0,0.0,49.7],total:1105.2},
+  {year:2025,months:[11.3,1.2,2.6,0.4,129.7,113.6,326.0,394.5,77.1,91.2,0.0,0.0],total:1147.6},
+  {year:2026,months:[33.6,0.8,19.9,0,0,0,0,0,0,0,0,0],total:54.3},
+];
+
+/* ══════════════════════════════════════════════════════════════
+   GLOBALS
+══════════════════════════════════════════════════════════════ */
+let obsData = [];
+let forecastData = null;
+let rainfallData = [];
+let charts = {};
+let currentRange = 14;
+const today = new Date().toISOString().slice(0,10);
+
+const COND_LABELS = {0:'Clear',1:'Variable',2:'Overcast',3:'Dust Storm',4:'Fog/Haze',5:'Drizzle',6:'Rain',7:'Snow',8:'Shower',9:'Thunderstorm'};
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/* ══════════════════════════════════════════════════════════════
+   LIVE CLOCK
+══════════════════════════════════════════════════════════════ */
+function tickClock() {
+  const now = new Date();
+  const ist = new Date(now.toLocaleString('en-US', {timeZone:'Asia/Kolkata'}));
+  const hh = String(ist.getHours()).padStart(2,'0');
+  const mm = String(ist.getMinutes()).padStart(2,'0');
+  const ss = String(ist.getSeconds()).padStart(2,'0');
+  document.getElementById('live-clock').textContent = `${hh}:${mm}:${ss} IST`;
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+/* ══════════════════════════════════════════════════════════════
+   LOAD DATA
+══════════════════════════════════════════════════════════════ */
+async function loadData() {
+  // Try CSV first, fall back to seed data
+  try {
+    const res = await fetch(CSV_PATH);
+    if (res.ok) {
+      const text = await res.text();
+      const parsed = Papa.parse(text, { header: true, dynamicTyping: true, skipEmptyLines: true });
+      obsData = parsed.data.map(r => ({
+        date: r.date, tmax: +r.tmax, tmin: +r.tmin, rain: +r.rain,
+        wind: +r.wind, wdir1: r.wdir1||'', wdir2: r.wdir2||'',
+        cond1: +r.cond1, cond2: +r.cond2,
+        rh1: +r.rh1, rh2: +r.rh2, bss: +r.bss, evap: +r.evap
+      })).filter(r => r.date);
+    } else { obsData = SEED_OBS; }
+  } catch(e) { obsData = SEED_OBS; }
+
+  // Sort ascending
+  obsData.sort((a,b) => a.date.localeCompare(b.date));
+
+  // Try forecast JSON
+  try {
+    const res = await fetch(FORECAST_PATH);
+    forecastData = res.ok ? await res.json() : SEED_FORECAST;
+  } catch(e) { forecastData = SEED_FORECAST; }
+
+  rainfallData = SEED_RAINFALL; // rainfall history always from seed/manual for now
+
+  renderAll();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER ALL
+══════════════════════════════════════════════════════════════ */
+function renderAll() {
+  renderMetricCards();
+  renderObsCharts();
+  renderForecast();
+  renderInference();
+  renderRainfall();
+  renderRawTable();
+  renderStatusBar();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   METRIC CARDS
+══════════════════════════════════════════════════════════════ */
+function renderMetricCards() {
+  const latest = obsData[obsData.length - 1];
+  if (!latest) return;
+
+  const condLabel = COND_LABELS[latest.cond1] || '—';
+  const condBadge = condBadgeClass(latest.cond1);
+
+  document.getElementById('last-date').textContent = `Latest obs: ${fmtDate(latest.date)}`;
+
+  const cards = [
+    { label:'Max Temperature', value: latest.tmax.toFixed(1), unit:'°C',
+      sub: `Min: ${latest.tmin.toFixed(1)} °C`, accent: latest.tmax >= 35 ? 'var(--amber)' : 'var(--green)' },
+    { label:'Min Temperature', value: latest.tmin.toFixed(1), unit:'°C',
+      sub: `Range: ${(latest.tmax - latest.tmin).toFixed(1)} °C`, accent: latest.tmin <= 10 ? 'var(--blue)' : 'var(--green)' },
+    { label:'Rainfall', value: latest.rain.toFixed(1), unit:'mm',
+      sub: `7-day total: ${last7Rain().toFixed(1)} mm`, accent: latest.rain > 0 ? 'var(--blue)' : 'var(--border2)' },
+    { label:'Rel. Humidity (AM)', value: latest.rh1, unit:'%',
+      sub: `PM: ${latest.rh2 || '—'} %`, accent: 'var(--green)' },
+    { label:'Bright Sunshine', value: latest.bss.toFixed(1), unit:'hrs',
+      sub: `Evap: ${latest.evap.toFixed(1)} mm/day`, accent: 'var(--amber)' },
+    { label:'Condition', value: condLabel, unit:'',
+      sub: `Wind: ${latest.wind.toFixed(1)} km/h · ${latest.wdir1}`, accent: 'var(--green)', small: true },
+  ];
+
+  const grid = document.getElementById('metrics-grid');
+  grid.innerHTML = cards.map(c => `
+    <div class="mcard" style="--accent:${c.accent}">
+      <div class="mcard-label">${c.label}</div>
+      <div class="mcard-value" style="${c.small ? 'font-size:1rem;padding-top:4px' : ''}">${c.value}<span class="mcard-unit">${c.unit}</span></div>
+      <div class="mcard-sub">${c.sub}</div>
+    </div>
+  `).join('');
+}
+
+function last7Rain() {
+  const slice = obsData.slice(-7);
+  return slice.reduce((s, r) => s + r.rain, 0);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════════ */
+function fmtDate(d) {
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function fmtDateShort(d) {
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+}
+
+function condBadgeClass(code) {
+  if ([6,8].includes(code)) return 'cond-rain';
+  if ([4].includes(code)) return 'cond-fog';
+  if ([9,3].includes(code)) return 'cond-storm';
+  return 'cond-clear';
+}
+
+function slicedObs() {
+  if (currentRange === 0) return obsData;
+  return obsData.slice(-currentRange);
+}
+
+function forecastIcon(rain, cloud) {
+  if (rain > 5) return '🌧';
+  if (rain > 0) return '🌦';
+  if (cloud >= 6) return '☁';
+  if (cloud >= 4) return '⛅';
+  return '☀';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CHART DEFAULTS
+══════════════════════════════════════════════════════════════ */
+const CHART_DEFAULTS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: { mode: 'index', intersect: false },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: '#181e20',
+      borderColor: 'rgba(255,255,255,0.1)',
+      borderWidth: 1,
+      titleColor: '#8a9e8e',
+      bodyColor: '#e8ede9',
+      titleFont: { family: 'Space Mono', size: 10 },
+      bodyFont: { family: 'Space Mono', size: 11 },
+      padding: 10,
+    }
+  },
+  scales: {
+    x: {
+      grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+      ticks: { color: '#4e6052', font: { family: 'Space Mono', size: 10 }, maxRotation: 45 },
+    },
+    y: {
+      grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+      ticks: { color: '#4e6052', font: { family: 'Space Mono', size: 10 } },
+    }
+  }
+};
+
+function makeOpts(extra = {}) {
+  return JSON.parse(JSON.stringify({ ...CHART_DEFAULTS, ...extra }));
+}
+
+/* ══════════════════════════════════════════════════════════════
+   OBSERVATION CHARTS
+══════════════════════════════════════════════════════════════ */
+function renderObsCharts() {
+  const data = slicedObs();
+  const labels = data.map(r => fmtDateShort(r.date));
+
+  // 1. Temp + Rain
+  destroyChart('tempRainChart');
+  charts.tempRain = new Chart(document.getElementById('tempRainChart'), {
+    data: {
+      labels,
+      datasets: [
+        { type:'line', label:'Max °C', data: data.map(r => r.tmax),
+          borderColor:'#f5a623', backgroundColor:'rgba(245,166,35,0.08)',
+          borderWidth:2, pointRadius:3, pointBackgroundColor:'#f5a623',
+          tension:0.3, yAxisID:'y', fill: false, order:2 },
+        { type:'line', label:'Min °C', data: data.map(r => r.tmin),
+          borderColor:'#5ba4f5', backgroundColor:'rgba(91,164,245,0.06)',
+          borderWidth:2, pointRadius:3, pointBackgroundColor:'#5ba4f5',
+          tension:0.3, yAxisID:'y', fill: false, order:2 },
+        { type:'bar', label:'Rain mm', data: data.map(r => r.rain),
+          backgroundColor:'rgba(91,164,245,0.35)', borderRadius:3,
+          yAxisID:'y2', order:1 }
+      ]
+    },
+    options: {
+      ...makeOpts(),
+      scales: {
+        ...makeOpts().scales,
+        y:  { ...makeOpts().scales.y, position:'left',  title:{display:true,text:'Temperature (°C)',color:'#4e6052',font:{family:'Space Mono',size:9}} },
+        y2: { ...makeOpts().scales.y, position:'right', grid:{display:false},
+              title:{display:true,text:'Rainfall (mm)',color:'#4e6052',font:{family:'Space Mono',size:9}} }
+      }
+    }
+  });
+
+  // 2. RH
+  destroyChart('rhChart');
+  charts.rh = new Chart(document.getElementById('rhChart'), {
+    type:'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'RH Morning %', data: data.map(r => r.rh1), borderColor:'#3ddc84',
+          backgroundColor:'rgba(61,220,132,0.08)', borderWidth:2, pointRadius:2, tension:0.4, fill:true },
+        { label:'RH Afternoon %', data: data.map(r => r.rh2 || null), borderColor:'rgba(61,220,132,0.4)',
+          borderDash:[4,4], borderWidth:1.5, pointRadius:2, tension:0.4, fill:false },
+      ]
+    },
+    options: { ...makeOpts(), scales: { ...makeOpts().scales,
+      y: { ...makeOpts().scales.y, min:0, max:100 }}}
+  });
+
+  // 3. BSS + Evap
+  destroyChart('bssChart');
+  charts.bss = new Chart(document.getElementById('bssChart'), {
+    data: {
+      labels,
+      datasets: [
+        { type:'bar', label:'BSS (hrs)', data: data.map(r => r.bss),
+          backgroundColor:'rgba(245,166,35,0.5)', borderRadius:3, yAxisID:'y' },
+        { type:'line', label:'Evap (mm)', data: data.map(r => r.evap),
+          borderColor:'#e05252', borderWidth:2, pointRadius:2, tension:0.3,
+          fill:false, yAxisID:'y2' }
+      ]
+    },
+    options: { ...makeOpts(), scales: { ...makeOpts().scales,
+      y: { ...makeOpts().scales.y },
+      y2: { ...makeOpts().scales.y, position:'right', grid:{display:false} }}}
+  });
+
+  // 4. Wind
+  destroyChart('windChart');
+  charts.wind = new Chart(document.getElementById('windChart'), {
+    type:'bar',
+    data: {
+      labels,
+      datasets: [{ label:'Wind (km/h)', data: data.map(r => r.wind),
+        backgroundColor:'rgba(61,220,132,0.35)', borderRadius:3 }]
+    },
+    options: makeOpts()
+  });
+}
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function setRange(n, btn) {
+  currentRange = n;
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderObsCharts();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FORECAST
+══════════════════════════════════════════════════════════════ */
+function renderForecast() {
+  const f = forecastData;
+  if (!f) return;
+
+  const row = document.getElementById('forecast-row');
+  row.innerHTML = f.days.map(d => {
+    const isToday = d.date === today;
+    const icon = forecastIcon(d.rain, d.cloud);
+    return `
+      <div class="fcard ${isToday ? 'today' : ''}">
+        <div class="fcard-date">${fmtDateShort(d.date)}${isToday ? ' ·  Today' : ''}</div>
+        <div class="fcard-icon">${icon}</div>
+        <div class="fcard-temp">${d.tmax}° <span>/ ${d.tmin}°</span></div>
+        <div class="fcard-meta">${d.rain > 0 ? `🌧 ${d.rain} mm<br/>` : ''}💨 ${d.wind} km/h ${d.wind_dir}<br/>💧 RH ${d.rh_min}–${d.rh_max}%</div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('advisory-text').textContent = f.advisory || '—';
+
+  // Forecast temp chart
+  destroyChart('forecastTempChart');
+  const fl = f.days.map(d => fmtDateShort(d.date));
+  charts.forecastTemp = new Chart(document.getElementById('forecastTempChart'), {
+    data: {
+      labels: fl,
+      datasets: [
+        { type:'line', label:'Max °C', data: f.days.map(d => d.tmax),
+          borderColor:'#f5a623', backgroundColor:'rgba(245,166,35,0.1)',
+          borderWidth:2, pointRadius:4, fill:true, tension:0.3 },
+        { type:'line', label:'Min °C', data: f.days.map(d => d.tmin),
+          borderColor:'#5ba4f5', backgroundColor:'rgba(91,164,245,0.05)',
+          borderWidth:2, pointRadius:4, fill:true, tension:0.3 }
+      ]
+    },
+    options: makeOpts()
+  });
+
+  // Forecast rain + RH chart
+  destroyChart('forecastRainChart');
+  charts.forecastRain = new Chart(document.getElementById('forecastRainChart'), {
+    data: {
+      labels: fl,
+      datasets: [
+        { type:'bar', label:'Rain mm', data: f.days.map(d => d.rain),
+          backgroundColor:'rgba(91,164,245,0.4)', borderRadius:3, yAxisID:'y' },
+        { type:'line', label:'Max RH %', data: f.days.map(d => d.rh_max),
+          borderColor:'#3ddc84', borderWidth:2, pointRadius:3, tension:0.3, yAxisID:'y2' },
+      ]
+    },
+    options: { ...makeOpts(), scales: { ...makeOpts().scales,
+      y:  { ...makeOpts().scales.y },
+      y2: { ...makeOpts().scales.y, position:'right', grid:{display:false}, min:0, max:100 }
+    }}
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AGRONOMIC INFERENCE
+══════════════════════════════════════════════════════════════ */
+function updateInference() { renderInference(); }
+
+function renderInference() {
+  const tBase   = parseFloat(document.getElementById('cfg-tbase').value) || 10;
+  const heatThr = parseFloat(document.getElementById('cfg-heat').value)  || 35;
+  const coldThr = parseFloat(document.getElementById('cfg-cold').value)  || 10;
+  const window_ = parseInt(document.getElementById('cfg-window').value)  || 90;
+
+  const slice = obsData.slice(-window_);
+  if (!slice.length) return;
+
+  // GDD
+  const gddSeries = [];
+  let cumGdd = 0;
+  slice.forEach(r => {
+    const tmean = (r.tmax + r.tmin) / 2;
+    const gdd = Math.max(0, tmean - tBase);
+    cumGdd += gdd;
+    gddSeries.push({ date: r.date, gdd, cumGdd });
+  });
+  const totalGDD = Math.round(cumGdd);
+
+  // Stress days
+  const heatDays = slice.filter(r => r.tmax >= heatThr).length;
+  const coldDays = slice.filter(r => r.tmin <= coldThr).length;
+
+  // ET₀ Hargreaves simplified: ET₀ ≈ 0.0023 × Ra × (Tmax - Tmin)^0.5 × (Tmean + 17.8)
+  // Ra approximated as constant for New Delhi latitude (~28.6°N) mid-year: 15 MJ/m²/day ≈ 6 mm/day
+  const RA_APPROX = 6.0;
+  let totalET0 = 0;
+  slice.forEach(r => {
+    const tmean = (r.tmax + r.tmin) / 2;
+    const td = Math.max(0, r.tmax - r.tmin);
+    const et0 = 0.0023 * RA_APPROX * Math.sqrt(td) * (tmean + 17.8);
+    totalET0 += et0;
+  });
+  totalET0 = Math.round(totalET0);
+
+  // Rainfall total
+  const totalRain = slice.reduce((s, r) => s + r.rain, 0);
+
+  // Water deficit
+  const deficit = Math.round(totalET0 - totalRain);
+
+  // Avg BSS
+  const avgBSS = (slice.reduce((s,r) => s + r.bss, 0) / slice.length).toFixed(1);
+
+  // Avg temp
+  const avgMax = (slice.reduce((s,r) => s + r.tmax, 0) / slice.length).toFixed(1);
+
+  const cards = [
+    {
+      title: 'Cumulative GDD',
+      big: totalGDD, unit: '°C-days',
+      desc: `Growing Degree Days above T<sub>base</sub> ${tBase}°C over last ${slice.length} days`,
+      prog: Math.min(100, (totalGDD / 1500) * 100), color: 'green'
+    },
+    {
+      title: 'Heat Stress Days',
+      big: heatDays, unit: 'days',
+      desc: `Days with T<sub>max</sub> ≥ ${heatThr}°C (pollen viability / grain filling risk)`,
+      prog: Math.min(100, (heatDays / slice.length) * 100), color: heatDays > 10 ? 'red' : 'amber'
+    },
+    {
+      title: 'Cold Stress Days',
+      big: coldDays, unit: 'days',
+      desc: `Days with T<sub>min</sub> ≤ ${coldThr}°C (germination / seedling risk)`,
+      prog: Math.min(100, (coldDays / slice.length) * 100), color: 'blue'
+    },
+    {
+      title: 'Est. ET₀ (Hargreaves)',
+      big: totalET0, unit: 'mm',
+      desc: `Reference evapotranspiration over ${slice.length} days (irrigation demand indicator)`,
+      prog: Math.min(100, (totalET0 / 500) * 100), color: 'amber'
+    },
+    {
+      title: 'Total Rainfall',
+      big: Math.round(totalRain), unit: 'mm',
+      desc: `Cumulative rainfall over last ${slice.length} days`,
+      prog: Math.min(100, (totalRain / 400) * 100), color: 'blue'
+    },
+    {
+      title: deficit > 0 ? 'Water Deficit' : 'Water Surplus',
+      big: Math.abs(deficit), unit: 'mm',
+      desc: deficit > 0
+        ? `ET₀ exceeds rainfall by ${deficit} mm — irrigation likely needed`
+        : `Rainfall exceeds ET₀ by ${Math.abs(deficit)} mm — low water stress`,
+      prog: Math.min(100, (Math.abs(deficit) / 300) * 100),
+      color: deficit > 0 ? 'red' : 'green'
+    },
+  ];
+
+  document.getElementById('inference-grid').innerHTML = cards.map(c => `
+    <div class="infer-card">
+      <div class="infer-title">${c.title}</div>
+      <div class="infer-big">${c.big}<span class="infer-unit">${c.unit}</span></div>
+      <div class="infer-desc">${c.desc}</div>
+      <div class="progress-track"><div class="progress-fill ${c.color}" style="width:${c.prog}%"></div></div>
+    </div>
+  `).join('');
+
+  // GDD chart
+  destroyChart('gddChart');
+  charts.gdd = new Chart(document.getElementById('gddChart'), {
+    type:'line',
+    data: {
+      labels: gddSeries.map(r => fmtDateShort(r.date)),
+      datasets: [{
+        label:'Cumulative GDD', data: gddSeries.map(r => r.cumGdd),
+        borderColor:'#3ddc84', backgroundColor:'rgba(61,220,132,0.08)',
+        borderWidth:2, pointRadius:2, fill:true, tension:0.3
+      }]
+    },
+    options: makeOpts()
+  });
+
+  // Water balance chart
+  destroyChart('waterChart');
+  charts.water = new Chart(document.getElementById('waterChart'), {
+    data: {
+      labels: slice.map(r => fmtDateShort(r.date)),
+      datasets: [
+        { type:'bar', label:'Rainfall mm', data: slice.map(r => r.rain),
+          backgroundColor:'rgba(91,164,245,0.4)', borderRadius:2 },
+        { type:'line', label:'ET₀ mm', data: slice.map(r => {
+            const tmean = (r.tmax + r.tmin) / 2;
+            const td = Math.max(0, r.tmax - r.tmin);
+            return +(0.0023 * RA_APPROX * Math.sqrt(td) * (tmean + 17.8)).toFixed(2);
+          }),
+          borderColor:'#e05252', borderWidth:2, pointRadius:2, tension:0.3, fill:false
+        }
+      ]
+    },
+    options: makeOpts()
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RAINFALL HISTORY
+══════════════════════════════════════════════════════════════ */
+function renderRainfall() {
+  const colors = ['#3ddc84','#5ba4f5','#f5a623','#e05252','#b07cf5','rgba(61,220,132,0.4)'];
+
+  destroyChart('rainfallChart');
+  charts.rainfall = new Chart(document.getElementById('rainfallChart'), {
+    type:'bar',
+    data: {
+      labels: MONTH_NAMES,
+      datasets: rainfallData.map((y, i) => ({
+        label: String(y.year),
+        data: y.months,
+        backgroundColor: colors[i % colors.length] + (i === rainfallData.length - 1 ? '' : '80'),
+        borderRadius: 2,
+      }))
+    },
+    options: {
+      ...makeOpts(),
+      plugins: {
+        ...makeOpts().plugins,
+        legend: {
+          display: true,
+          labels: { color:'#8a9e8e', font:{ family:'Space Mono', size:10 }, boxWidth:10 }
+        }
+      }
+    }
+  });
+
+  // Rainfall table
+  const tbody = document.getElementById('rainfall-tbody');
+  tbody.innerHTML = rainfallData.map(y => `
+    <tr>
+      <td style="color:var(--text);font-weight:700">${y.year}</td>
+      ${y.months.map((m, mi) => `<td class="${m > 0 ? 'td-rain' : ''}">${m > 0 ? m.toFixed(1) : '—'}</td>`).join('')}
+      <td style="color:var(--text);font-weight:700">${y.total.toFixed(1)}</td>
+    </tr>
+  `).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RAW DATA TABLE
+══════════════════════════════════════════════════════════════ */
+function renderRawTable() {
+  const tbody = document.getElementById('raw-tbody');
+  const rows = [...obsData].reverse(); // most recent first
+  tbody.innerHTML = rows.map(r => {
+    const cond1 = COND_LABELS[r.cond1] || '—';
+    const cond2 = COND_LABELS[r.cond2] || '—';
+    const condCls1 = condBadgeClass(r.cond1);
+    return `
+      <tr>
+        <td>${fmtDate(r.date)}</td>
+        <td class="${r.tmax >= 35 ? 'td-hot' : ''}">${r.tmax.toFixed(1)}</td>
+        <td class="${r.tmin <= 10 ? 'td-cold' : ''}">${r.tmin.toFixed(1)}</td>
+        <td class="${r.rain > 0 ? 'td-rain' : ''}">${r.rain.toFixed(1)}</td>
+        <td>${r.wind.toFixed(1)}</td>
+        <td>${r.wdir1 || '—'}</td>
+        <td>${r.wdir2 || '—'}</td>
+        <td><span class="cond-badge ${condCls1}">${cond1}</span></td>
+        <td>${cond2}</td>
+        <td>${r.rh1}</td>
+        <td>${r.rh2 || '—'}</td>
+        <td>${r.bss.toFixed(1)}</td>
+        <td>${r.evap.toFixed(1)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STATUS BAR
+══════════════════════════════════════════════════════════════ */
+function renderStatusBar() {
+  if (!obsData.length) return;
+  const first = obsData[0].date;
+  const last  = obsData[obsData.length - 1].date;
+  const ytd   = obsData
+    .filter(r => r.date.startsWith(new Date().getFullYear()))
+    .reduce((s, r) => s + r.rain, 0).toFixed(1);
+
+  document.getElementById('stat-records').textContent = obsData.length;
+  document.getElementById('stat-range').textContent   = `${fmtDate(first)} → ${fmtDate(last)}`;
+  document.getElementById('stat-ytd').textContent     = `${ytd} mm`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TAB SWITCHING
+══════════════════════════════════════════════════════════════ */
+function switchTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════════════════════════ */
+loadData();
+</script>
+</body>
+</html>
