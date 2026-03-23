@@ -9,22 +9,23 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
   :root {
-    --bg:        #0a0e0f;
-    --bg2:       #111618;
-    --bg3:       #181e20;
-    --border:    rgba(255,255,255,0.07);
-    --border2:   rgba(255,255,255,0.13);
-    --green:     #3ddc84;
-    --green-dim: rgba(61,220,132,0.12);
-    --green-glow:rgba(61,220,132,0.25);
-    --amber:     #f5a623;
-    --amber-dim: rgba(245,166,35,0.12);
-    --red:       #e05252;
-    --blue:      #5ba4f5;
-    --blue-dim:  rgba(91,164,245,0.12);
-    --text:      #e8ede9;
-    --text2:     #8a9e8e;
-    --text3:     #4e6052;
+    --bg:        #f6fbff;
+    --bg2:       #ffffff;
+    --bg3:       #eaf4fb;
+    --border:    rgba(18, 66, 90, 0.14);
+    --border2:   rgba(18, 66, 90, 0.28);
+    --green:     #0f766e;
+    --green-dim: rgba(15,118,110,0.12);
+    --green-glow:rgba(15,118,110,0.22);
+    --amber:     #b45309;
+    --amber-dim: rgba(180,83,9,0.12);
+    --red:       #b91c1c;
+    --blue:      #0f5cc0;
+    --blue-dim:  rgba(15,92,192,0.12);
+    --text:      #102a43;
+    --text2:     #36566f;
+    --text3:     #5f7d95;
+    --shadow:    0 18px 42px rgba(20,66,104,0.08);
     --mono:      'Space Mono', monospace;
     --sans:      'DM Sans', sans-serif;
     --radius:    8px;
@@ -36,7 +37,10 @@
   html { font-size: 14px; scroll-behavior: smooth; }
 
   body {
-    background: var(--bg);
+    background:
+      radial-gradient(circle at top left, rgba(76,201,240,0.16), transparent 24%),
+      radial-gradient(circle at top right, rgba(15,118,110,0.12), transparent 20%),
+      linear-gradient(180deg, #fcfeff 0%, var(--bg) 46%, #eef8ff 100%);
     color: var(--text);
     font-family: var(--sans);
     min-height: 100vh;
@@ -51,8 +55,8 @@
       0deg,
       transparent,
       transparent 3px,
-      rgba(0,0,0,0.04) 3px,
-      rgba(0,0,0,0.04) 4px
+      rgba(15,92,192,0.02) 3px,
+      rgba(15,92,192,0.02) 4px
     );
     pointer-events: none;
     z-index: 1000;
@@ -199,6 +203,7 @@
     background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
     padding: 1rem 1.1rem;
     position: relative;
     overflow: hidden;
@@ -263,6 +268,7 @@
     background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
     padding: 1.25rem 1.4rem;
   }
 
@@ -317,10 +323,11 @@
     border-radius: var(--radius);
     padding: 0.85rem 0.7rem;
     text-align: center;
+    box-shadow: 0 10px 26px rgba(20,66,104,0.05);
     transition: border-color 0.2s;
   }
 
-  .fcard.today { border-color: rgba(61,220,132,0.3); background: var(--green-dim); }
+  .fcard.today { border-color: rgba(15,118,110,0.34); background: var(--green-dim); }
   .fcard:hover { border-color: var(--border2); }
 
   .fcard-date {
@@ -355,7 +362,7 @@
   /* ── ADVISORY BOX ── */
   .advisory {
     background: var(--amber-dim);
-    border: 1px solid rgba(245,166,35,0.25);
+    border: 1px solid rgba(180,83,9,0.28);
     border-radius: var(--radius);
     padding: 0.85rem 1rem;
     margin-top: 1rem;
@@ -387,6 +394,8 @@
   .table-wrap {
     overflow-x: auto;
     border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg2);
   }
 
   table {
@@ -417,6 +426,7 @@
   }
 
   tbody tr:hover { background: var(--bg3); }
+  tbody tr:nth-child(even) { background: rgba(15,92,192,0.03); }
   tbody tr:last-child { border-bottom: none; }
 
   td {
@@ -441,7 +451,7 @@
 
   .cond-rain   { background: var(--blue-dim); color: var(--blue); }
   .cond-clear  { background: var(--green-dim); color: var(--green); }
-  .cond-fog    { background: rgba(138,158,142,0.1); color: var(--text3); }
+  .cond-fog    { background: rgba(95,125,149,0.14); color: var(--text2); }
   .cond-storm  { background: var(--amber-dim); color: var(--amber); }
 
   /* ── INFERENCE PANEL ── */
@@ -459,6 +469,7 @@
     background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
     padding: 1.1rem 1.2rem;
   }
 
@@ -528,6 +539,7 @@
     background: var(--bg3);
     border: 1px solid var(--border);
     border-radius: var(--radius);
+    box-shadow: 0 8px 18px rgba(20,66,104,0.04);
     padding: 0.75rem 0.9rem;
   }
 
@@ -582,6 +594,13 @@
     border-color: var(--green);
     color: var(--green);
     background: var(--green-dim);
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  a:focus-visible {
+    outline: 3px solid rgba(15,92,192,0.25);
+    outline-offset: 2px;
   }
 
   /* ── STATUS BAR ── */
@@ -1093,11 +1112,11 @@ const CHART_DEFAULTS = {
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: '#181e20',
-      borderColor: 'rgba(255,255,255,0.1)',
+      backgroundColor: '#ffffff',
+      borderColor: 'rgba(18,66,90,0.18)',
       borderWidth: 1,
-      titleColor: '#8a9e8e',
-      bodyColor: '#e8ede9',
+      titleColor: '#36566f',
+      bodyColor: '#102a43',
       titleFont: { family: 'Space Mono', size: 10 },
       bodyFont: { family: 'Space Mono', size: 11 },
       padding: 10,
@@ -1105,12 +1124,12 @@ const CHART_DEFAULTS = {
   },
   scales: {
     x: {
-      grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
-      ticks: { color: '#4e6052', font: { family: 'Space Mono', size: 10 }, maxRotation: 45 },
+      grid: { color: 'rgba(18,66,90,0.08)', drawBorder: false },
+      ticks: { color: '#5f7d95', font: { family: 'Space Mono', size: 10 }, maxRotation: 45 },
     },
     y: {
-      grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
-      ticks: { color: '#4e6052', font: { family: 'Space Mono', size: 10 } },
+      grid: { color: 'rgba(18,66,90,0.08)', drawBorder: false },
+      ticks: { color: '#5f7d95', font: { family: 'Space Mono', size: 10 } },
     }
   }
 };
@@ -1133,15 +1152,15 @@ function renderObsCharts() {
       labels,
       datasets: [
         { type:'line', label:'Max °C', data: data.map(r => r.tmax),
-          borderColor:'#f5a623', backgroundColor:'rgba(245,166,35,0.08)',
-          borderWidth:2, pointRadius:3, pointBackgroundColor:'#f5a623',
+          borderColor:'#b45309', backgroundColor:'rgba(180,83,9,0.08)',
+          borderWidth:2, pointRadius:3, pointBackgroundColor:'#b45309',
           tension:0.3, yAxisID:'y', fill: false, order:2 },
         { type:'line', label:'Min °C', data: data.map(r => r.tmin),
-          borderColor:'#5ba4f5', backgroundColor:'rgba(91,164,245,0.06)',
-          borderWidth:2, pointRadius:3, pointBackgroundColor:'#5ba4f5',
+          borderColor:'#0f5cc0', backgroundColor:'rgba(15,92,192,0.08)',
+          borderWidth:2, pointRadius:3, pointBackgroundColor:'#0f5cc0',
           tension:0.3, yAxisID:'y', fill: false, order:2 },
         { type:'bar', label:'Rain mm', data: data.map(r => r.rain),
-          backgroundColor:'rgba(91,164,245,0.35)', borderRadius:3,
+          backgroundColor:'rgba(0,114,178,0.42)', borderRadius:3,
           yAxisID:'y2', order:1 }
       ]
     },
@@ -1149,9 +1168,9 @@ function renderObsCharts() {
       ...makeOpts(),
       scales: {
         ...makeOpts().scales,
-        y:  { ...makeOpts().scales.y, position:'left',  title:{display:true,text:'Temperature (°C)',color:'#4e6052',font:{family:'Space Mono',size:9}} },
+        y:  { ...makeOpts().scales.y, position:'left',  title:{display:true,text:'Temperature (°C)',color:'#5f7d95',font:{family:'Space Mono',size:9}} },
         y2: { ...makeOpts().scales.y, position:'right', grid:{display:false},
-              title:{display:true,text:'Rainfall (mm)',color:'#4e6052',font:{family:'Space Mono',size:9}} }
+              title:{display:true,text:'Rainfall (mm)',color:'#5f7d95',font:{family:'Space Mono',size:9}} }
       }
     }
   });
@@ -1163,9 +1182,9 @@ function renderObsCharts() {
     data: {
       labels,
       datasets: [
-        { label:'RH Morning %', data: data.map(r => r.rh1), borderColor:'#3ddc84',
-          backgroundColor:'rgba(61,220,132,0.08)', borderWidth:2, pointRadius:2, tension:0.4, fill:true },
-        { label:'RH Afternoon %', data: data.map(r => r.rh2 || null), borderColor:'rgba(61,220,132,0.4)',
+        { label:'RH Morning %', data: data.map(r => r.rh1), borderColor:'#0f766e',
+          backgroundColor:'rgba(15,118,110,0.10)', borderWidth:2, pointRadius:2, tension:0.4, fill:true },
+        { label:'RH Afternoon %', data: data.map(r => r.rh2 || null), borderColor:'rgba(15,118,110,0.46)',
           borderDash:[4,4], borderWidth:1.5, pointRadius:2, tension:0.4, fill:false },
       ]
     },
@@ -1180,9 +1199,9 @@ function renderObsCharts() {
       labels,
       datasets: [
         { type:'bar', label:'BSS (hrs)', data: data.map(r => r.bss),
-          backgroundColor:'rgba(245,166,35,0.5)', borderRadius:3, yAxisID:'y' },
+          backgroundColor:'rgba(230,159,0,0.5)', borderRadius:3, yAxisID:'y' },
         { type:'line', label:'Evap (mm)', data: data.map(r => r.evap),
-          borderColor:'#e05252', borderWidth:2, pointRadius:2, tension:0.3,
+          borderColor:'#cc79a7', borderWidth:2, pointRadius:2, tension:0.3,
           fill:false, yAxisID:'y2' }
       ]
     },
@@ -1198,7 +1217,7 @@ function renderObsCharts() {
     data: {
       labels,
       datasets: [{ label:'Wind (km/h)', data: data.map(r => r.wind),
-        backgroundColor:'rgba(61,220,132,0.35)', borderRadius:3 }]
+        backgroundColor:'rgba(15,118,110,0.35)', borderRadius:3 }]
     },
     options: makeOpts()
   });
@@ -1246,10 +1265,10 @@ function renderForecast() {
       labels: fl,
       datasets: [
         { type:'line', label:'Max °C', data: f.days.map(d => d.tmax),
-          borderColor:'#f5a623', backgroundColor:'rgba(245,166,35,0.1)',
+          borderColor:'#b45309', backgroundColor:'rgba(180,83,9,0.10)',
           borderWidth:2, pointRadius:4, fill:true, tension:0.3 },
         { type:'line', label:'Min °C', data: f.days.map(d => d.tmin),
-          borderColor:'#5ba4f5', backgroundColor:'rgba(91,164,245,0.05)',
+          borderColor:'#0f5cc0', backgroundColor:'rgba(15,92,192,0.08)',
           borderWidth:2, pointRadius:4, fill:true, tension:0.3 }
       ]
     },
@@ -1263,9 +1282,9 @@ function renderForecast() {
       labels: fl,
       datasets: [
         { type:'bar', label:'Rain mm', data: f.days.map(d => d.rain),
-          backgroundColor:'rgba(91,164,245,0.4)', borderRadius:3, yAxisID:'y' },
+          backgroundColor:'rgba(0,114,178,0.42)', borderRadius:3, yAxisID:'y' },
         { type:'line', label:'Max RH %', data: f.days.map(d => d.rh_max),
-          borderColor:'#3ddc84', borderWidth:2, pointRadius:3, tension:0.3, yAxisID:'y2' },
+          borderColor:'#0f766e', borderWidth:2, pointRadius:3, tension:0.3, yAxisID:'y2' },
       ]
     },
     options: { ...makeOpts(), scales: { ...makeOpts().scales,
@@ -1387,7 +1406,7 @@ function renderInference() {
       labels: gddSeries.map(r => fmtDateShort(r.date)),
       datasets: [{
         label:'Cumulative GDD', data: gddSeries.map(r => r.cumGdd),
-        borderColor:'#3ddc84', backgroundColor:'rgba(61,220,132,0.08)',
+        borderColor:'#0f766e', backgroundColor:'rgba(15,118,110,0.10)',
         borderWidth:2, pointRadius:2, fill:true, tension:0.3
       }]
     },
@@ -1401,13 +1420,13 @@ function renderInference() {
       labels: slice.map(r => fmtDateShort(r.date)),
       datasets: [
         { type:'bar', label:'Rainfall mm', data: slice.map(r => r.rain),
-          backgroundColor:'rgba(91,164,245,0.4)', borderRadius:2 },
+          backgroundColor:'rgba(0,114,178,0.42)', borderRadius:2 },
         { type:'line', label:'ET₀ mm', data: slice.map(r => {
             const tmean = (r.tmax + r.tmin) / 2;
             const td = Math.max(0, r.tmax - r.tmin);
             return +(0.0023 * RA_APPROX * Math.sqrt(td) * (tmean + 17.8)).toFixed(2);
           }),
-          borderColor:'#e05252', borderWidth:2, pointRadius:2, tension:0.3, fill:false
+          borderColor:'#cc79a7', borderWidth:2, pointRadius:2, tension:0.3, fill:false
         }
       ]
     },
@@ -1419,7 +1438,7 @@ function renderInference() {
    RAINFALL HISTORY
 ══════════════════════════════════════════════════════════════ */
 function renderRainfall() {
-  const colors = ['#3ddc84','#5ba4f5','#f5a623','#e05252','#b07cf5','rgba(61,220,132,0.4)'];
+  const colors = ['#0072b2','#0f766e','#e69f00','#cc79a7','#7c3aed','#56b4e9'];
 
   destroyChart('rainfallChart');
   charts.rainfall = new Chart(document.getElementById('rainfallChart'), {
@@ -1439,7 +1458,7 @@ function renderRainfall() {
         ...makeOpts().plugins,
         legend: {
           display: true,
-          labels: { color:'#8a9e8e', font:{ family:'Space Mono', size:10 }, boxWidth:10 }
+          labels: { color:'#36566f', font:{ family:'Space Mono', size:10 }, boxWidth:10 }
         }
       }
     }
