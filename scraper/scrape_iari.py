@@ -102,33 +102,97 @@ def fetch_page():
 
 # ── Parsers ───────────────────────────────────────────────────────────────────
 
+_DATE_RE = re.compile(r"^\d{2}/\d{2}/\d{4}$")
+
+
+def _find_obs_table(soup):
+    """
+    Locate the daily observation table using three independent strategies,
+    tried in order. Returns the matching BS4 tag or None.
+
+    Strategy A — date-format scan (primary, most reliable):
+        Walk every table's body rows. If any row has ≥13 <td> cells and the
+        first cell matches DD/MM/YYYY, this is the observation table.
+        Works regardless of header structure, language, colspan, or rowspan.
+
+    Strategy B — keyword scan across full table text (fallback):
+        Look for a table whose combined text contains 'date' AND ('temp' OR
+        'rainfall'), while excluding the forecast table (whose first row
+        contains ISO-format dates like 2026-03-24).
+
+    Strategy C — widest table (last resort):
+        The observation table always has the most columns (13) on the IARI
+        page. If nothing else matched, pick the widest table with ≥13 cols.
+    """
+    tables = soup.find_all("table")
+
+    # ── A: date-format cell in body rows ──────────────────────────────────
+    for tbl in tables:
+        for row in tbl.find_all("tr"):
+            cells = row.find_all("td")
+            if len(cells) >= 13 and _DATE_RE.match(cells[0].get_text(strip=True)):
+                log.debug("Obs table found via strategy A (date-format)")
+                return tbl
+
+    # ── B: keyword scan, excluding forecast table ──────────────────────────
+    for tbl in tables:
+        text = tbl.get_text(" ").lower()
+        if "date" in text and ("temp" in text or "rainfall" in text):
+            first_row_cells = [
+                c.get_text(strip=True)
+                for c in (tbl.find("tr") or []).find_all("td")
+            ] if tbl.find("tr") else []
+            is_forecast = any(
+                re.match(r"\d{4}-\d{2}-\d{2}", c) for c in first_row_cells
+            )
+            if not is_forecast:
+                log.debug("Obs table found via strategy B (keyword scan)")
+                return tbl
+
+    # ── C: widest table with ≥13 columns ──────────────────────────────────
+    widest, max_cols = None, 0
+    for tbl in tables:
+        for row in tbl.find_all("tr"):
+            n = len(row.find_all("td"))
+            if n > max_cols:
+                max_cols = n
+                widest = tbl
+    if widest and max_cols >= 13:
+        log.debug("Obs table found via strategy C (widest table, %d cols)", max_cols)
+        return widest
+
+    return None
+
+
 def parse_obs_table(soup):
     """
     Parse the 10-day daily observation table.
 
-    IARI uses plain <td> cells for the header row (no <th>), so we locate
-    the table by checking the first few cell texts for 'Date' and 'Temp'.
+    Uses _find_obs_table() which tries three detection strategies so the
+    scraper remains robust against IARI page layout changes (header text,
+    colspan/rowspan, Hindi mixed headers, missing header row, etc.).
 
     Returns a list of dicts with keys matching OBS_COLUMNS.
     """
-    obs_table = None
-    for tbl in soup.find_all("table"):
-        first_cells = [safe_text(c) for c in tbl.find_all("td")[:5]]
-        row_text = " ".join(first_cells).lower()
-        if "date" in row_text and ("temp" in row_text or "max" in row_text):
-            obs_table = tbl
-            break
+    obs_table = _find_obs_table(soup)
 
     if obs_table is None:
-        raise ValueError("Observation table not found on page")
+        raise ValueError(
+            "Observation table not found — all three detection strategies failed. "
+            "The page structure may have changed significantly."
+        )
 
     records = []
-    for row in obs_table.find_all("tr")[1:]:   # skip header row
+    for row in obs_table.find_all("tr"):
         cells = [safe_text(c) for c in row.find_all("td")]
         if len(cells) < 13:
             continue
 
-        # Date cell: "DD/MM/YYYY" → ISO "YYYY-MM-DD"
+        # Only process rows whose first cell is a DD/MM/YYYY date
+        # (skips any header rows automatically, regardless of structure)
+        if not _DATE_RE.match(cells[0].strip()):
+            continue
+
         try:
             dt = datetime.strptime(cells[0].strip(), "%d/%m/%Y")
             date_iso = dt.strftime("%Y-%m-%d")
