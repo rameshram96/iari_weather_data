@@ -5,7 +5,7 @@ on:
   # IARI publishes observations from the previous day by ~08:00 IST.
   # Running 15 min later gives the page time to update.
   schedule:
-    - cron: "30 3 * * *"
+    - cron: "30 4 * * *"
 
   # ── Manual trigger with options ───────────────────────────────────────────
   workflow_dispatch:
