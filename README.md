@@ -27,9 +27,5 @@ An automated dashboard that scrapes, archives, and visualises daily meteorologic
 pip install -r scraper/requirements.txt
 python scraper/scrape_iari.py --dry-run   # test without writing
 python scraper/scrape_iari.py             # live run
-```
 
-Clone traffic is visible to the repo owner under **Insights → Traffic → Clones**.
-
----
 *Data: IARI Agromet Observatory & IMD RMC, New Delhi.*
