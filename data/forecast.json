@@ -1,30 +1,8 @@
 {
-  "generated": "2026-04-30T05:46:27Z",
+  "generated": "2026-05-01T05:56:39Z",
   "advisory": "",
   "weekly_rain_mm": null,
   "days": [
-    {
-      "date": "2026-04-30",
-      "tmax": null,
-      "tmin": null,
-      "rain": 0.0,
-      "cloud": null,
-      "rh_max": null,
-      "rh_min": null,
-      "wind": null,
-      "wind_dir": ""
-    },
-    {
-      "date": "2026-05-01",
-      "tmax": null,
-      "tmin": null,
-      "rain": 0.0,
-      "cloud": null,
-      "rh_max": null,
-      "rh_min": null,
-      "wind": null,
-      "wind_dir": ""
-    },
     {
       "date": "2026-05-02",
       "tmax": null,
@@ -38,6 +16,28 @@
     },
     {
       "date": "2026-05-03",
+      "tmax": null,
+      "tmin": null,
+      "rain": 0.0,
+      "cloud": null,
+      "rh_max": null,
+      "rh_min": null,
+      "wind": null,
+      "wind_dir": ""
+    },
+    {
+      "date": "2026-05-04",
+      "tmax": null,
+      "tmin": null,
+      "rain": 0.0,
+      "cloud": null,
+      "rh_max": null,
+      "rh_min": null,
+      "wind": null,
+      "wind_dir": ""
+    },
+    {
+      "date": "2026-05-05",
       "tmax": null,
       "tmin": null,
       "rain": 0.0,
