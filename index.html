@@ -4,62 +4,56 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>IARI Weather Dashboard — New Delhi</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
   :root {
-    --bg:        #f6fbff;
-    --bg2:       #ffffff;
-    --bg3:       #eaf4fb;
-    --border:    rgba(18, 66, 90, 0.14);
-    --border2:   rgba(18, 66, 90, 0.28);
-    --green:     #0f766e;
-    --green-dim: rgba(15,118,110,0.12);
-    --green-glow:rgba(15,118,110,0.22);
-    --amber:     #b45309;
-    --amber-dim: rgba(180,83,9,0.12);
-    --red:       #b91c1c;
-    --blue:      #0f5cc0;
-    --blue-dim:  rgba(15,92,192,0.12);
-    --text:      #102a43;
-    --text2:     #36566f;
-    --text3:     #5f7d95;
-    --shadow:    0 18px 42px rgba(20,66,104,0.08);
+    /* ── Field & sky palette ──────────────────────────────────────
+       Base: cool paper with a warm undertone (soil-adjacent, not sterile white).
+       Green = crop/growth, Amber = sun/heat/wheat, Blue = sky/rain, Rust = alert. */
+    --bg:        #f5f7f1;
+    --bg2:       #fffefb;
+    --bg3:       #eef2e6;
+    --bg-header: #eef3e3;
+    --border:    rgba(38, 61, 34, 0.13);
+    --border2:   rgba(38, 61, 34, 0.26);
+    --green:     #2f6b3a;
+    --green-dim: rgba(47,107,58,0.11);
+    --green-glow:rgba(47,107,58,0.28);
+    --amber:     #a8631a;
+    --amber-dim: rgba(168,99,26,0.12);
+    --red:       #ab3428;
+    --blue:      #29628f;
+    --blue-dim:  rgba(41,98,143,0.12);
+    --text:      #1c2b18;
+    --text2:     #3f4f38;
+    --text3:     #71806a;
+    --shadow:    0 14px 34px rgba(43,58,32,0.09);
+    --serif:     'Fraunces', serif;
     --mono:      'Space Mono', monospace;
     --sans:      'DM Sans', sans-serif;
-    --radius:    8px;
-    --radius-lg: 14px;
+    --radius:    7px;
+    --radius-lg: 12px;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   html { font-size: 14px; scroll-behavior: smooth; }
 
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+
   body {
     background:
-      radial-gradient(circle at top left, rgba(76,201,240,0.16), transparent 24%),
-      radial-gradient(circle at top right, rgba(15,118,110,0.12), transparent 20%),
-      linear-gradient(180deg, #fcfeff 0%, var(--bg) 46%, #eef8ff 100%);
+      radial-gradient(circle at 8% 0%, rgba(47,107,58,0.07), transparent 26%),
+      radial-gradient(circle at 100% 6%, rgba(41,98,143,0.08), transparent 24%),
+      linear-gradient(180deg, #fbfcf7 0%, var(--bg) 40%, #f2f5ea 100%);
     color: var(--text);
     font-family: var(--sans);
     min-height: 100vh;
     overflow-x: hidden;
-  }
-
-  /* ── SCAN LINE OVERLAY ── */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 3px,
-      rgba(15,92,192,0.02) 3px,
-      rgba(15,92,192,0.02) 4px
-    );
-    pointer-events: none;
-    z-index: 1000;
   }
 
   /* ── LAYOUT ── */
@@ -69,18 +63,47 @@
     padding: 0 1.5rem 3rem;
   }
 
-  /* ── HEADER ── */
+  /* ── HEADER ──────────────────────────────────────────────────
+     A quiet field-row texture behind the masthead: this is the one
+     signature flourish, everything else stays disciplined. */
   header {
+    position: relative;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    padding: 1.5rem 0 1.25rem;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 1.5rem;
+    padding: 1.9rem 1.8rem 1.6rem;
+    margin: 1.1rem 0 1.6rem;
     gap: 1rem;
+    background: var(--bg-header);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
   }
 
-  .header-left { flex: 1; }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      115deg,
+      rgba(47,107,58,0.05) 0px,
+      rgba(47,107,58,0.05) 1px,
+      transparent 1px,
+      transparent 34px
+    );
+    pointer-events: none;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green) 0%, var(--blue) 55%, var(--amber) 100%);
+  }
+
+  .header-left { flex: 1; position: relative; z-index: 1; }
 
   .header-badge {
     display: inline-flex;
@@ -89,9 +112,8 @@
     font-family: var(--mono);
     font-size: 10px;
     color: var(--green);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 8px;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
   }
 
   .header-badge::before {
@@ -110,66 +132,68 @@
   }
 
   h1 {
-    font-family: var(--sans);
-    font-size: 1.6rem;
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-size: 2rem;
     font-weight: 600;
     color: var(--text);
-    line-height: 1.2;
+    line-height: 1.12;
     letter-spacing: -0.01em;
   }
 
   .header-sub {
-    font-family: var(--mono);
-    font-size: 11px;
+    font-family: var(--sans);
+    font-size: 12.5px;
     color: var(--text3);
-    margin-top: 6px;
-    letter-spacing: 0.04em;
+    margin-top: 8px;
+    line-height: 1.6;
   }
 
   .header-right {
     text-align: right;
     flex-shrink: 0;
+    position: relative;
+    z-index: 1;
   }
 
   .last-updated {
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 10.5px;
     color: var(--text3);
     line-height: 1.8;
   }
 
   #live-clock {
     font-family: var(--mono);
-    font-size: 1.1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
     color: var(--green);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
   }
 
   /* ── NAV TABS ── */
   .tabs {
     display: flex;
-    gap: 4px;
+    gap: 2px;
     margin-bottom: 1.5rem;
     border-bottom: 1px solid var(--border);
-    padding-bottom: 0;
   }
 
   .tab-btn {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 8px 16px;
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 12.5px;
+    padding: 9px 17px;
     background: transparent;
     border: none;
     color: var(--text3);
     cursor: pointer;
     position: relative;
-    transition: color 0.2s;
+    transition: color 0.18s;
     border-radius: var(--radius) var(--radius) 0 0;
   }
 
-  .tab-btn:hover { color: var(--text2); }
+  .tab-btn:hover { color: var(--text2); background: rgba(47,107,58,0.05); }
 
   .tab-btn.active {
     color: var(--green);
@@ -179,14 +203,20 @@
   .tab-btn.active::after {
     content: '';
     position: absolute;
-    bottom: -1px; left: 0; right: 0;
+    bottom: -1px; left: 10px; right: 10px;
     height: 2px;
     background: var(--green);
+    border-radius: 2px 2px 0 0;
   }
 
   /* ── PANELS ── */
   .panel { display: none; }
-  .panel.active { display: block; }
+  .panel.active { display: block; animation: reveal 0.35s ease; }
+
+  @keyframes reveal {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 
   /* ── METRIC CARDS ── */
   .metrics-grid {
@@ -202,37 +232,28 @@
   .mcard {
     background: var(--bg2);
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    border-left: 3px solid var(--accent, var(--green));
+    border-radius: var(--radius);
     box-shadow: var(--shadow);
-    padding: 1rem 1.1rem;
+    padding: 0.95rem 1.05rem;
     position: relative;
     overflow: hidden;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, transform 0.2s;
   }
 
-  .mcard:hover { border-color: var(--border2); }
-
-  .mcard::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: var(--accent, var(--green));
-    opacity: 0.6;
-  }
+  .mcard:hover { border-color: var(--border2); border-left-color: var(--accent, var(--green)); transform: translateY(-1px); }
 
   .mcard-label {
-    font-family: var(--mono);
-    font-size: 9px;
+    font-family: var(--sans);
+    font-size: 10.5px;
     color: var(--text3);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 6px;
+    letter-spacing: 0.02em;
+    margin-bottom: 7px;
   }
 
   .mcard-value {
     font-family: var(--mono);
-    font-size: 1.6rem;
+    font-size: 1.55rem;
     font-weight: 700;
     color: var(--text);
     line-height: 1;
@@ -250,7 +271,7 @@
     font-family: var(--sans);
     font-size: 11px;
     color: var(--text3);
-    margin-top: 5px;
+    margin-top: 6px;
   }
 
   /* ── TWO-COLUMN LAYOUT ── */
@@ -278,14 +299,16 @@
     justify-content: space-between;
     margin-bottom: 1rem;
     gap: 1rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
   }
 
   .card-title {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 15px;
     color: var(--text2);
+    letter-spacing: -0.01em;
   }
 
   .range-btns { display: flex; gap: 4px; }
@@ -293,14 +316,14 @@
   .range-btn {
     font-family: var(--mono);
     font-size: 10px;
-    padding: 3px 9px;
+    padding: 3px 10px;
     border-radius: 4px;
     border: 1px solid var(--border);
     background: transparent;
     color: var(--text3);
     cursor: pointer;
     transition: all 0.15s;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
   }
 
   .range-btn:hover { border-color: var(--border2); color: var(--text2); }
@@ -321,26 +344,26 @@
     background: var(--bg3);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 0.85rem 0.7rem;
+    padding: 0.9rem 0.7rem;
     text-align: center;
-    box-shadow: 0 10px 26px rgba(20,66,104,0.05);
-    transition: border-color 0.2s;
+    box-shadow: 0 8px 20px rgba(43,58,32,0.05);
+    transition: border-color 0.2s, transform 0.2s;
   }
 
-  .fcard.today { border-color: rgba(15,118,110,0.34); background: var(--green-dim); }
-  .fcard:hover { border-color: var(--border2); }
+  .fcard.today { border-color: rgba(47,107,58,0.4); background: var(--green-dim); }
+  .fcard:hover { border-color: var(--border2); transform: translateY(-1px); }
 
   .fcard-date {
     font-family: var(--mono);
     font-size: 10px;
     color: var(--text3);
-    letter-spacing: 0.08em;
-    margin-bottom: 6px;
+    letter-spacing: 0.05em;
+    margin-bottom: 7px;
   }
 
-  .fcard.today .fcard-date { color: var(--green); }
+  .fcard.today .fcard-date { color: var(--green); font-weight: 700; }
 
-  .fcard-icon { font-size: 1.4rem; margin-bottom: 4px; }
+  .fcard-icon { font-size: 1.5rem; margin-bottom: 4px; }
 
   .fcard-temp {
     font-family: var(--mono);
@@ -355,14 +378,15 @@
     font-family: var(--sans);
     font-size: 11px;
     color: var(--text3);
-    margin-top: 4px;
-    line-height: 1.5;
+    margin-top: 5px;
+    line-height: 1.6;
   }
 
   /* ── ADVISORY BOX ── */
   .advisory {
     background: var(--amber-dim);
-    border: 1px solid rgba(180,83,9,0.28);
+    border: 1px solid rgba(168,99,26,0.28);
+    border-left: 3px solid var(--amber);
     border-radius: var(--radius);
     padding: 0.85rem 1rem;
     margin-top: 1rem;
@@ -382,12 +406,11 @@
 
   .advisory-label {
     font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
     color: var(--amber);
     margin-bottom: 3px;
-    opacity: 0.7;
+    opacity: 0.75;
   }
 
   /* ── DATA TABLE ── */
@@ -408,16 +431,16 @@
 
   thead tr {
     border-bottom: 1px solid var(--border2);
+    background: var(--bg3);
   }
 
   th {
     text-align: left;
-    padding: 8px 12px;
-    font-size: 9px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    padding: 9px 12px;
+    font-size: 9.5px;
+    letter-spacing: 0.07em;
     color: var(--text3);
-    font-weight: 400;
+    font-weight: 700;
   }
 
   tbody tr {
@@ -426,7 +449,7 @@
   }
 
   tbody tr:hover { background: var(--bg3); }
-  tbody tr:nth-child(even) { background: rgba(15,92,192,0.03); }
+  tbody tr:nth-child(even) { background: rgba(41,98,143,0.025); }
   tbody tr:last-child { border-bottom: none; }
 
   td {
@@ -434,24 +457,23 @@
     color: var(--text2);
   }
 
-  td:first-child { color: var(--text); }
+  td:first-child { color: var(--text); font-weight: 700; }
 
   .td-rain { color: var(--blue); font-weight: 700; }
-  .td-hot  { color: var(--amber); }
-  .td-cold { color: var(--blue); }
+  .td-hot  { color: var(--amber); font-weight: 700; }
+  .td-cold { color: var(--blue); font-weight: 700; }
 
   .cond-badge {
     display: inline-block;
-    padding: 2px 7px;
+    padding: 2px 8px;
     border-radius: 4px;
     font-size: 9px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .cond-rain   { background: var(--blue-dim); color: var(--blue); }
   .cond-clear  { background: var(--green-dim); color: var(--green); }
-  .cond-fog    { background: rgba(95,125,149,0.14); color: var(--text2); }
+  .cond-fog    { background: rgba(113,128,106,0.15); color: var(--text2); }
   .cond-storm  { background: var(--amber-dim); color: var(--amber); }
 
   /* ── INFERENCE PANEL ── */
@@ -470,16 +492,15 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow);
-    padding: 1.1rem 1.2rem;
+    padding: 1.15rem 1.25rem;
   }
 
   .infer-title {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 11px;
     color: var(--text3);
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.65rem;
   }
 
   .infer-big {
@@ -501,7 +522,7 @@
     font-family: var(--sans);
     font-size: 12px;
     color: var(--text3);
-    margin-top: 6px;
+    margin-top: 7px;
     line-height: 1.5;
   }
 
@@ -510,7 +531,7 @@
     height: 4px;
     background: var(--border);
     border-radius: 2px;
-    margin-top: 10px;
+    margin-top: 11px;
     overflow: hidden;
   }
 
@@ -539,16 +560,14 @@
     background: var(--bg3);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    box-shadow: 0 8px 18px rgba(20,66,104,0.04);
+    box-shadow: 0 6px 16px rgba(43,58,32,0.04);
     padding: 0.75rem 0.9rem;
   }
 
   .config-label {
-    font-family: var(--mono);
-    font-size: 9px;
+    font-family: var(--sans);
+    font-size: 10.5px;
     color: var(--text3);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
     margin-bottom: 4px;
   }
 
@@ -576,10 +595,9 @@
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 12px;
     padding: 8px 16px;
     border: 1px solid var(--border2);
     border-radius: var(--radius);
@@ -599,7 +617,7 @@
   button:focus-visible,
   input:focus-visible,
   a:focus-visible {
-    outline: 3px solid rgba(15,92,192,0.25);
+    outline: 3px solid rgba(41,98,143,0.3);
     outline-offset: 2px;
   }
 
@@ -608,7 +626,7 @@
     display: flex;
     align-items: center;
     gap: 1.5rem;
-    padding: 0.6rem 0;
+    padding: 0.7rem 0.2rem;
     border-top: 1px solid var(--border);
     margin-top: 2rem;
     flex-wrap: wrap;
@@ -618,10 +636,10 @@
     font-family: var(--mono);
     font-size: 10px;
     color: var(--text3);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.03em;
   }
 
-  .status-item span { color: var(--text2); }
+  .status-item span { color: var(--text2); font-weight: 700; }
 
   /* ── LOADING STATE ── */
   .skeleton {
@@ -639,7 +657,7 @@
     color: var(--text3);
     font-family: var(--mono);
     font-size: 12px;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
   }
 
   .empty-state strong {
@@ -1112,24 +1130,24 @@ const CHART_DEFAULTS = {
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: '#ffffff',
-      borderColor: 'rgba(18,66,90,0.18)',
+      backgroundColor: '#fffefb',
+      borderColor: 'rgba(38,61,34,0.2)',
       borderWidth: 1,
-      titleColor: '#36566f',
-      bodyColor: '#102a43',
-      titleFont: { family: 'Space Mono', size: 10 },
+      titleColor: '#3f4f38',
+      bodyColor: '#1c2b18',
+      titleFont: { family: 'DM Sans', size: 11, weight: '600' },
       bodyFont: { family: 'Space Mono', size: 11 },
       padding: 10,
     }
   },
   scales: {
     x: {
-      grid: { color: 'rgba(18,66,90,0.08)', drawBorder: false },
-      ticks: { color: '#5f7d95', font: { family: 'Space Mono', size: 10 }, maxRotation: 45 },
+      grid: { color: 'rgba(38,61,34,0.08)', drawBorder: false },
+      ticks: { color: '#71806a', font: { family: 'Space Mono', size: 10 }, maxRotation: 45 },
     },
     y: {
-      grid: { color: 'rgba(18,66,90,0.08)', drawBorder: false },
-      ticks: { color: '#5f7d95', font: { family: 'Space Mono', size: 10 } },
+      grid: { color: 'rgba(38,61,34,0.08)', drawBorder: false },
+      ticks: { color: '#71806a', font: { family: 'Space Mono', size: 10 } },
     }
   }
 };
@@ -1152,15 +1170,15 @@ function renderObsCharts() {
       labels,
       datasets: [
         { type:'line', label:'Max °C', data: data.map(r => r.tmax),
-          borderColor:'#b45309', backgroundColor:'rgba(180,83,9,0.08)',
-          borderWidth:2, pointRadius:3, pointBackgroundColor:'#b45309',
+          borderColor:'#a8631a', backgroundColor:'rgba(168,99,26,0.08)',
+          borderWidth:2, pointRadius:3, pointBackgroundColor:'#a8631a',
           tension:0.3, yAxisID:'y', fill: false, order:2 },
         { type:'line', label:'Min °C', data: data.map(r => r.tmin),
-          borderColor:'#0f5cc0', backgroundColor:'rgba(15,92,192,0.08)',
-          borderWidth:2, pointRadius:3, pointBackgroundColor:'#0f5cc0',
+          borderColor:'#29628f', backgroundColor:'rgba(41,98,143,0.08)',
+          borderWidth:2, pointRadius:3, pointBackgroundColor:'#29628f',
           tension:0.3, yAxisID:'y', fill: false, order:2 },
         { type:'bar', label:'Rain mm', data: data.map(r => r.rain),
-          backgroundColor:'rgba(0,114,178,0.42)', borderRadius:3,
+          backgroundColor:'rgba(41,98,143,0.4)', borderRadius:3,
           yAxisID:'y2', order:1 }
       ]
     },
@@ -1168,9 +1186,9 @@ function renderObsCharts() {
       ...makeOpts(),
       scales: {
         ...makeOpts().scales,
-        y:  { ...makeOpts().scales.y, position:'left',  title:{display:true,text:'Temperature (°C)',color:'#5f7d95',font:{family:'Space Mono',size:9}} },
+        y:  { ...makeOpts().scales.y, position:'left',  title:{display:true,text:'Temperature (°C)',color:'#71806a',font:{family:'DM Sans',size:10}} },
         y2: { ...makeOpts().scales.y, position:'right', grid:{display:false},
-              title:{display:true,text:'Rainfall (mm)',color:'#5f7d95',font:{family:'Space Mono',size:9}} }
+              title:{display:true,text:'Rainfall (mm)',color:'#71806a',font:{family:'DM Sans',size:10}} }
       }
     }
   });
@@ -1182,9 +1200,9 @@ function renderObsCharts() {
     data: {
       labels,
       datasets: [
-        { label:'RH Morning %', data: data.map(r => r.rh1), borderColor:'#0f766e',
-          backgroundColor:'rgba(15,118,110,0.10)', borderWidth:2, pointRadius:2, tension:0.4, fill:true },
-        { label:'RH Afternoon %', data: data.map(r => r.rh2 || null), borderColor:'rgba(15,118,110,0.46)',
+        { label:'RH Morning %', data: data.map(r => r.rh1), borderColor:'#2f6b3a',
+          backgroundColor:'rgba(47,107,58,0.10)', borderWidth:2, pointRadius:2, tension:0.4, fill:true },
+        { label:'RH Afternoon %', data: data.map(r => r.rh2 || null), borderColor:'rgba(47,107,58,0.5)',
           borderDash:[4,4], borderWidth:1.5, pointRadius:2, tension:0.4, fill:false },
       ]
     },
@@ -1199,9 +1217,9 @@ function renderObsCharts() {
       labels,
       datasets: [
         { type:'bar', label:'BSS (hrs)', data: data.map(r => r.bss),
-          backgroundColor:'rgba(230,159,0,0.5)', borderRadius:3, yAxisID:'y' },
+          backgroundColor:'rgba(168,99,26,0.42)', borderRadius:3, yAxisID:'y' },
         { type:'line', label:'Evap (mm)', data: data.map(r => r.evap),
-          borderColor:'#cc79a7', borderWidth:2, pointRadius:2, tension:0.3,
+          borderColor:'#8a4a7c', borderWidth:2, pointRadius:2, tension:0.3,
           fill:false, yAxisID:'y2' }
       ]
     },
@@ -1217,7 +1235,7 @@ function renderObsCharts() {
     data: {
       labels,
       datasets: [{ label:'Wind (km/h)', data: data.map(r => r.wind),
-        backgroundColor:'rgba(15,118,110,0.35)', borderRadius:3 }]
+        backgroundColor:'rgba(47,107,58,0.38)', borderRadius:3 }]
     },
     options: makeOpts()
   });
@@ -1265,10 +1283,10 @@ function renderForecast() {
       labels: fl,
       datasets: [
         { type:'line', label:'Max °C', data: f.days.map(d => d.tmax),
-          borderColor:'#b45309', backgroundColor:'rgba(180,83,9,0.10)',
+          borderColor:'#a8631a', backgroundColor:'rgba(168,99,26,0.10)',
           borderWidth:2, pointRadius:4, fill:true, tension:0.3 },
         { type:'line', label:'Min °C', data: f.days.map(d => d.tmin),
-          borderColor:'#0f5cc0', backgroundColor:'rgba(15,92,192,0.08)',
+          borderColor:'#29628f', backgroundColor:'rgba(41,98,143,0.08)',
           borderWidth:2, pointRadius:4, fill:true, tension:0.3 }
       ]
     },
@@ -1282,9 +1300,9 @@ function renderForecast() {
       labels: fl,
       datasets: [
         { type:'bar', label:'Rain mm', data: f.days.map(d => d.rain),
-          backgroundColor:'rgba(0,114,178,0.42)', borderRadius:3, yAxisID:'y' },
+          backgroundColor:'rgba(41,98,143,0.4)', borderRadius:3, yAxisID:'y' },
         { type:'line', label:'Max RH %', data: f.days.map(d => d.rh_max),
-          borderColor:'#0f766e', borderWidth:2, pointRadius:3, tension:0.3, yAxisID:'y2' },
+          borderColor:'#2f6b3a', borderWidth:2, pointRadius:3, tension:0.3, yAxisID:'y2' },
       ]
     },
     options: { ...makeOpts(), scales: { ...makeOpts().scales,
@@ -1406,7 +1424,7 @@ function renderInference() {
       labels: gddSeries.map(r => fmtDateShort(r.date)),
       datasets: [{
         label:'Cumulative GDD', data: gddSeries.map(r => r.cumGdd),
-        borderColor:'#0f766e', backgroundColor:'rgba(15,118,110,0.10)',
+        borderColor:'#2f6b3a', backgroundColor:'rgba(47,107,58,0.10)',
         borderWidth:2, pointRadius:2, fill:true, tension:0.3
       }]
     },
@@ -1420,13 +1438,13 @@ function renderInference() {
       labels: slice.map(r => fmtDateShort(r.date)),
       datasets: [
         { type:'bar', label:'Rainfall mm', data: slice.map(r => r.rain),
-          backgroundColor:'rgba(0,114,178,0.42)', borderRadius:2 },
+          backgroundColor:'rgba(41,98,143,0.4)', borderRadius:2 },
         { type:'line', label:'ET₀ mm', data: slice.map(r => {
             const tmean = (r.tmax + r.tmin) / 2;
             const td = Math.max(0, r.tmax - r.tmin);
             return +(0.0023 * RA_APPROX * Math.sqrt(td) * (tmean + 17.8)).toFixed(2);
           }),
-          borderColor:'#cc79a7', borderWidth:2, pointRadius:2, tension:0.3, fill:false
+          borderColor:'#8a4a7c', borderWidth:2, pointRadius:2, tension:0.3, fill:false
         }
       ]
     },
@@ -1438,7 +1456,7 @@ function renderInference() {
    RAINFALL HISTORY
 ══════════════════════════════════════════════════════════════ */
 function renderRainfall() {
-  const colors = ['#0072b2','#0f766e','#e69f00','#cc79a7','#7c3aed','#56b4e9'];
+  const colors = ['#29628f','#2f6b3a','#a8631a','#8a4a7c','#6b5aa8','#4d9fb0'];
 
   destroyChart('rainfallChart');
   charts.rainfall = new Chart(document.getElementById('rainfallChart'), {
@@ -1458,7 +1476,7 @@ function renderRainfall() {
         ...makeOpts().plugins,
         legend: {
           display: true,
-          labels: { color:'#36566f', font:{ family:'Space Mono', size:10 }, boxWidth:10 }
+          labels: { color:'#3f4f38', font:{ family:'DM Sans', size:11 }, boxWidth:10 }
         }
       }
     }
