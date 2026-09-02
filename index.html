@@ -9,27 +9,31 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
   :root {
-    /* ── Field & sky palette ──────────────────────────────────────
-       Base: cool paper with a warm undertone (soil-adjacent, not sterile white).
-       Green = crop/growth, Amber = sun/heat/wheat, Blue = sky/rain, Rust = alert. */
-    --bg:        #f5f7f1;
-    --bg2:       #fffefb;
-    --bg3:       #eef2e6;
-    --bg-header: #eef3e3;
-    --border:    rgba(38, 61, 34, 0.13);
-    --border2:   rgba(38, 61, 34, 0.26);
-    --green:     #2f6b3a;
-    --green-dim: rgba(47,107,58,0.11);
-    --green-glow:rgba(47,107,58,0.28);
-    --amber:     #a8631a;
-    --amber-dim: rgba(168,99,26,0.12);
-    --red:       #ab3428;
-    --blue:      #29628f;
-    --blue-dim:  rgba(41,98,143,0.12);
-    --text:      #1c2b18;
-    --text2:     #3f4f38;
-    --text3:     #71806a;
-    --shadow:    0 14px 34px rgba(43,58,32,0.09);
+    /* ── Field & sky palette — saturated ──────────────────────────
+       Base: warm paper. Green = crop/growth, Amber = sun/wheat,
+       Blue = sky/rain, Coral = evap/alert, Violet = extra series. */
+    --bg:        #f7f5ec;
+    --bg2:       #fffefd;
+    --bg3:       #f0ecd9;
+    --bg-header: #eef0d8;
+    --border:    rgba(43, 40, 20, 0.13);
+    --border2:   rgba(43, 40, 20, 0.26);
+    --green:     #0f9d58;
+    --green-dim: rgba(15,157,88,0.13);
+    --green-glow:rgba(15,157,88,0.32);
+    --amber:     #e8930b;
+    --amber-dim: rgba(232,147,11,0.14);
+    --red:       #e0392b;
+    --red-dim:   rgba(224,57,43,0.13);
+    --blue:      #1477d1;
+    --blue-dim:  rgba(20,119,209,0.13);
+    --violet:    #8b5cf6;
+    --violet-dim:rgba(139,92,246,0.13);
+    --coral:     #ef5f6f;
+    --text:      #221d0f;
+    --text2:     #4a4326;
+    --text3:     #7d7452;
+    --shadow:    0 14px 34px rgba(60,52,20,0.10);
     --serif:     'Fraunces', serif;
     --mono:      'Space Mono', monospace;
     --sans:      'DM Sans', sans-serif;
@@ -47,9 +51,10 @@
 
   body {
     background:
-      radial-gradient(circle at 8% 0%, rgba(47,107,58,0.07), transparent 26%),
-      radial-gradient(circle at 100% 6%, rgba(41,98,143,0.08), transparent 24%),
-      linear-gradient(180deg, #fbfcf7 0%, var(--bg) 40%, #f2f5ea 100%);
+      radial-gradient(circle at 6% 0%, rgba(15,157,88,0.10), transparent 26%),
+      radial-gradient(circle at 100% 8%, rgba(20,119,209,0.11), transparent 26%),
+      radial-gradient(circle at 55% 100%, rgba(232,147,11,0.07), transparent 30%),
+      linear-gradient(180deg, #fdfcf4 0%, var(--bg) 40%, #f3efdd 100%);
     color: var(--text);
     font-family: var(--sans);
     min-height: 100vh;
@@ -87,8 +92,8 @@
     inset: 0;
     background-image: repeating-linear-gradient(
       115deg,
-      rgba(47,107,58,0.05) 0px,
-      rgba(47,107,58,0.05) 1px,
+      rgba(15,157,88,0.06) 0px,
+      rgba(15,157,88,0.06) 1px,
       transparent 1px,
       transparent 34px
     );
@@ -99,8 +104,8 @@
     content: '';
     position: absolute;
     left: 0; right: 0; bottom: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--green) 0%, var(--blue) 55%, var(--amber) 100%);
+    height: 4px;
+    background: linear-gradient(90deg, var(--green) 0%, var(--blue) 33%, var(--violet) 60%, var(--amber) 82%, var(--coral) 100%);
   }
 
   .header-left { flex: 1; position: relative; z-index: 1; }
@@ -134,9 +139,12 @@
   h1 {
     font-family: var(--serif);
     font-optical-sizing: auto;
-    font-size: 2rem;
+    font-size: 2.1rem;
     font-weight: 600;
-    color: var(--text);
+    background: linear-gradient(100deg, var(--text) 45%, var(--green) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
     line-height: 1.12;
     letter-spacing: -0.01em;
   }
@@ -193,7 +201,7 @@
     border-radius: var(--radius) var(--radius) 0 0;
   }
 
-  .tab-btn:hover { color: var(--text2); background: rgba(47,107,58,0.05); }
+  .tab-btn:hover { color: var(--text2); background: rgba(15,157,88,0.05); }
 
   .tab-btn.active {
     color: var(--green);
@@ -205,7 +213,7 @@
     position: absolute;
     bottom: -1px; left: 10px; right: 10px;
     height: 2px;
-    background: var(--green);
+    background: linear-gradient(90deg, var(--green), var(--blue));
     border-radius: 2px 2px 0 0;
   }
 
@@ -230,18 +238,24 @@
   @media (max-width: 600px)  { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
 
   .mcard {
-    background: var(--bg2);
+    background:
+      linear-gradient(165deg, color-mix(in srgb, var(--accent, var(--green)) 8%, var(--bg2)) 0%, var(--bg2) 55%);
     border: 1px solid var(--border);
-    border-left: 3px solid var(--accent, var(--green));
+    border-left: 4px solid var(--accent, var(--green));
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     padding: 0.95rem 1.05rem;
     position: relative;
     overflow: hidden;
-    transition: border-color 0.2s, transform 0.2s;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
   }
 
-  .mcard:hover { border-color: var(--border2); border-left-color: var(--accent, var(--green)); transform: translateY(-1px); }
+  .mcard:hover {
+    border-color: var(--border2);
+    border-left-color: var(--accent, var(--green));
+    transform: translateY(-2px);
+    box-shadow: 0 18px 40px rgba(60,52,20,0.14);
+  }
 
   .mcard-label {
     font-family: var(--sans);
@@ -341,7 +355,7 @@
   @media (max-width: 700px) { .forecast-row { grid-template-columns: repeat(3, 1fr); } }
 
   .fcard {
-    background: var(--bg3);
+    background: linear-gradient(165deg, rgba(20,119,209,0.06), var(--bg3) 60%);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 0.9rem 0.7rem;
@@ -350,7 +364,7 @@
     transition: border-color 0.2s, transform 0.2s;
   }
 
-  .fcard.today { border-color: rgba(47,107,58,0.4); background: var(--green-dim); }
+  .fcard.today { border-color: rgba(15,157,88,0.4); background: var(--green-dim); }
   .fcard:hover { border-color: var(--border2); transform: translateY(-1px); }
 
   .fcard-date {
@@ -385,7 +399,7 @@
   /* ── ADVISORY BOX ── */
   .advisory {
     background: var(--amber-dim);
-    border: 1px solid rgba(168,99,26,0.28);
+    border: 1px solid rgba(232,147,11,0.28);
     border-left: 3px solid var(--amber);
     border-radius: var(--radius);
     padding: 0.85rem 1rem;
@@ -449,7 +463,7 @@
   }
 
   tbody tr:hover { background: var(--bg3); }
-  tbody tr:nth-child(even) { background: rgba(41,98,143,0.025); }
+  tbody tr:nth-child(even) { background: rgba(20,119,209,0.025); }
   tbody tr:last-child { border-bottom: none; }
 
   td {
@@ -471,10 +485,10 @@
     letter-spacing: 0.05em;
   }
 
-  .cond-rain   { background: var(--blue-dim); color: var(--blue); }
-  .cond-clear  { background: var(--green-dim); color: var(--green); }
-  .cond-fog    { background: rgba(113,128,106,0.15); color: var(--text2); }
-  .cond-storm  { background: var(--amber-dim); color: var(--amber); }
+  .cond-rain   { background: var(--blue-dim); color: var(--blue); font-weight: 700; }
+  .cond-clear  { background: var(--green-dim); color: var(--green); font-weight: 700; }
+  .cond-fog    { background: var(--violet-dim); color: var(--violet); font-weight: 700; }
+  .cond-storm  { background: var(--amber-dim); color: var(--amber); font-weight: 700; }
 
   /* ── INFERENCE PANEL ── */
   .inference-grid {
@@ -488,11 +502,18 @@
   @media (max-width: 580px) { .inference-grid { grid-template-columns: 1fr; } }
 
   .infer-card {
-    background: var(--bg2);
+    background: linear-gradient(165deg, color-mix(in srgb, var(--card-accent, var(--green)) 7%, var(--bg2)) 0%, var(--bg2) 60%);
     border: 1px solid var(--border);
+    border-top: 3px solid var(--card-accent, var(--green));
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow);
     padding: 1.15rem 1.25rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .infer-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 40px rgba(60,52,20,0.14);
   }
 
   .infer-title {
@@ -557,7 +578,7 @@
   @media (max-width: 800px) { .config-grid { grid-template-columns: repeat(2, 1fr); } }
 
   .config-item {
-    background: var(--bg3);
+    background: linear-gradient(165deg, rgba(15,157,88,0.06), var(--bg3) 60%);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     box-shadow: 0 6px 16px rgba(43,58,32,0.04);
@@ -617,7 +638,7 @@
   button:focus-visible,
   input:focus-visible,
   a:focus-visible {
-    outline: 3px solid rgba(41,98,143,0.3);
+    outline: 3px solid rgba(20,119,209,0.3);
     outline-offset: 2px;
   }
 
@@ -1165,20 +1186,20 @@ function renderObsCharts() {
 
   // 1. Temp + Rain
   destroyChart('tempRainChart');
-  charts.tempRain = new Chart(document.getElementById('tempRainChart'), {
+  charts.tempRainChart = new Chart(document.getElementById('tempRainChart'), {
     data: {
       labels,
       datasets: [
         { type:'line', label:'Max °C', data: data.map(r => r.tmax),
-          borderColor:'#a8631a', backgroundColor:'rgba(168,99,26,0.08)',
-          borderWidth:2, pointRadius:3, pointBackgroundColor:'#a8631a',
+          borderColor:'#e8930b', backgroundColor:'rgba(232,147,11,0.08)',
+          borderWidth:2, pointRadius:3, pointBackgroundColor:'#e8930b',
           tension:0.3, yAxisID:'y', fill: false, order:2 },
         { type:'line', label:'Min °C', data: data.map(r => r.tmin),
-          borderColor:'#29628f', backgroundColor:'rgba(41,98,143,0.08)',
-          borderWidth:2, pointRadius:3, pointBackgroundColor:'#29628f',
+          borderColor:'#1477d1', backgroundColor:'rgba(20,119,209,0.08)',
+          borderWidth:2, pointRadius:3, pointBackgroundColor:'#1477d1',
           tension:0.3, yAxisID:'y', fill: false, order:2 },
         { type:'bar', label:'Rain mm', data: data.map(r => r.rain),
-          backgroundColor:'rgba(41,98,143,0.4)', borderRadius:3,
+          backgroundColor:'rgba(20,119,209,0.4)', borderRadius:3,
           yAxisID:'y2', order:1 }
       ]
     },
@@ -1195,14 +1216,14 @@ function renderObsCharts() {
 
   // 2. RH
   destroyChart('rhChart');
-  charts.rh = new Chart(document.getElementById('rhChart'), {
+  charts.rhChart = new Chart(document.getElementById('rhChart'), {
     type:'line',
     data: {
       labels,
       datasets: [
-        { label:'RH Morning %', data: data.map(r => r.rh1), borderColor:'#2f6b3a',
-          backgroundColor:'rgba(47,107,58,0.10)', borderWidth:2, pointRadius:2, tension:0.4, fill:true },
-        { label:'RH Afternoon %', data: data.map(r => r.rh2 || null), borderColor:'rgba(47,107,58,0.5)',
+        { label:'RH Morning %', data: data.map(r => r.rh1), borderColor:'#0f9d58',
+          backgroundColor:'rgba(15,157,88,0.10)', borderWidth:2, pointRadius:2, tension:0.4, fill:true },
+        { label:'RH Afternoon %', data: data.map(r => r.rh2 || null), borderColor:'rgba(15,157,88,0.5)',
           borderDash:[4,4], borderWidth:1.5, pointRadius:2, tension:0.4, fill:false },
       ]
     },
@@ -1212,14 +1233,14 @@ function renderObsCharts() {
 
   // 3. BSS + Evap
   destroyChart('bssChart');
-  charts.bss = new Chart(document.getElementById('bssChart'), {
+  charts.bssChart = new Chart(document.getElementById('bssChart'), {
     data: {
       labels,
       datasets: [
         { type:'bar', label:'BSS (hrs)', data: data.map(r => r.bss),
-          backgroundColor:'rgba(168,99,26,0.42)', borderRadius:3, yAxisID:'y' },
+          backgroundColor:'rgba(232,147,11,0.42)', borderRadius:3, yAxisID:'y' },
         { type:'line', label:'Evap (mm)', data: data.map(r => r.evap),
-          borderColor:'#8a4a7c', borderWidth:2, pointRadius:2, tension:0.3,
+          borderColor:'#8b5cf6', borderWidth:2, pointRadius:2, tension:0.3,
           fill:false, yAxisID:'y2' }
       ]
     },
@@ -1230,12 +1251,12 @@ function renderObsCharts() {
 
   // 4. Wind
   destroyChart('windChart');
-  charts.wind = new Chart(document.getElementById('windChart'), {
+  charts.windChart = new Chart(document.getElementById('windChart'), {
     type:'bar',
     data: {
       labels,
       datasets: [{ label:'Wind (km/h)', data: data.map(r => r.wind),
-        backgroundColor:'rgba(47,107,58,0.38)', borderRadius:3 }]
+        backgroundColor:'rgba(15,157,88,0.38)', borderRadius:3 }]
     },
     options: makeOpts()
   });
@@ -1278,15 +1299,15 @@ function renderForecast() {
   // Forecast temp chart
   destroyChart('forecastTempChart');
   const fl = f.days.map(d => fmtDateShort(d.date));
-  charts.forecastTemp = new Chart(document.getElementById('forecastTempChart'), {
+  charts.forecastTempChart = new Chart(document.getElementById('forecastTempChart'), {
     data: {
       labels: fl,
       datasets: [
         { type:'line', label:'Max °C', data: f.days.map(d => d.tmax),
-          borderColor:'#a8631a', backgroundColor:'rgba(168,99,26,0.10)',
+          borderColor:'#e8930b', backgroundColor:'rgba(232,147,11,0.10)',
           borderWidth:2, pointRadius:4, fill:true, tension:0.3 },
         { type:'line', label:'Min °C', data: f.days.map(d => d.tmin),
-          borderColor:'#29628f', backgroundColor:'rgba(41,98,143,0.08)',
+          borderColor:'#1477d1', backgroundColor:'rgba(20,119,209,0.08)',
           borderWidth:2, pointRadius:4, fill:true, tension:0.3 }
       ]
     },
@@ -1295,14 +1316,14 @@ function renderForecast() {
 
   // Forecast rain + RH chart
   destroyChart('forecastRainChart');
-  charts.forecastRain = new Chart(document.getElementById('forecastRainChart'), {
+  charts.forecastRainChart = new Chart(document.getElementById('forecastRainChart'), {
     data: {
       labels: fl,
       datasets: [
         { type:'bar', label:'Rain mm', data: f.days.map(d => d.rain),
-          backgroundColor:'rgba(41,98,143,0.4)', borderRadius:3, yAxisID:'y' },
+          backgroundColor:'rgba(20,119,209,0.4)', borderRadius:3, yAxisID:'y' },
         { type:'line', label:'Max RH %', data: f.days.map(d => d.rh_max),
-          borderColor:'#2f6b3a', borderWidth:2, pointRadius:3, tension:0.3, yAxisID:'y2' },
+          borderColor:'#0f9d58', borderWidth:2, pointRadius:3, tension:0.3, yAxisID:'y2' },
       ]
     },
     options: { ...makeOpts(), scales: { ...makeOpts().scales,
@@ -1407,8 +1428,9 @@ function renderInference() {
     },
   ];
 
+  const COLOR_VAR = { green:'var(--green)', amber:'var(--amber)', red:'var(--red)', blue:'var(--blue)' };
   document.getElementById('inference-grid').innerHTML = cards.map(c => `
-    <div class="infer-card">
+    <div class="infer-card" style="--card-accent:${COLOR_VAR[c.color] || 'var(--green)'}">
       <div class="infer-title">${c.title}</div>
       <div class="infer-big">${c.big}<span class="infer-unit">${c.unit}</span></div>
       <div class="infer-desc">${c.desc}</div>
@@ -1418,13 +1440,13 @@ function renderInference() {
 
   // GDD chart
   destroyChart('gddChart');
-  charts.gdd = new Chart(document.getElementById('gddChart'), {
+  charts.gddChart = new Chart(document.getElementById('gddChart'), {
     type:'line',
     data: {
       labels: gddSeries.map(r => fmtDateShort(r.date)),
       datasets: [{
         label:'Cumulative GDD', data: gddSeries.map(r => r.cumGdd),
-        borderColor:'#2f6b3a', backgroundColor:'rgba(47,107,58,0.10)',
+        borderColor:'#0f9d58', backgroundColor:'rgba(15,157,88,0.10)',
         borderWidth:2, pointRadius:2, fill:true, tension:0.3
       }]
     },
@@ -1433,18 +1455,18 @@ function renderInference() {
 
   // Water balance chart
   destroyChart('waterChart');
-  charts.water = new Chart(document.getElementById('waterChart'), {
+  charts.waterChart = new Chart(document.getElementById('waterChart'), {
     data: {
       labels: slice.map(r => fmtDateShort(r.date)),
       datasets: [
         { type:'bar', label:'Rainfall mm', data: slice.map(r => r.rain),
-          backgroundColor:'rgba(41,98,143,0.4)', borderRadius:2 },
+          backgroundColor:'rgba(20,119,209,0.4)', borderRadius:2 },
         { type:'line', label:'ET₀ mm', data: slice.map(r => {
             const tmean = (r.tmax + r.tmin) / 2;
             const td = Math.max(0, r.tmax - r.tmin);
             return +(0.0023 * RA_APPROX * Math.sqrt(td) * (tmean + 17.8)).toFixed(2);
           }),
-          borderColor:'#8a4a7c', borderWidth:2, pointRadius:2, tension:0.3, fill:false
+          borderColor:'#8b5cf6', borderWidth:2, pointRadius:2, tension:0.3, fill:false
         }
       ]
     },
@@ -1456,10 +1478,10 @@ function renderInference() {
    RAINFALL HISTORY
 ══════════════════════════════════════════════════════════════ */
 function renderRainfall() {
-  const colors = ['#29628f','#2f6b3a','#a8631a','#8a4a7c','#6b5aa8','#4d9fb0'];
+  const colors = ['#1477d1','#0f9d58','#e8930b','#8b5cf6','#ef5f6f','#0fb5b0'];
 
   destroyChart('rainfallChart');
-  charts.rainfall = new Chart(document.getElementById('rainfallChart'), {
+  charts.rainfallChart = new Chart(document.getElementById('rainfallChart'), {
     type:'bar',
     data: {
       labels: MONTH_NAMES,
