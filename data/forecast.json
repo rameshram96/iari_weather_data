@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-15T08:01:45Z",
+  "generated": "2026-09-16T07:55:20Z",
   "advisory": "",
   "weekly_rain_mm": null,
   "days": [
     {
-      "date": "2026-09-12",
+      "date": "2026-09-17",
       "tmax": null,
       "tmin": null,
       "rain": 0.0,
@@ -15,7 +15,7 @@
       "wind_dir": ""
     },
     {
-      "date": "2026-09-13",
+      "date": "2026-09-18",
       "tmax": null,
       "tmin": null,
       "rain": 0.0,
@@ -26,7 +26,7 @@
       "wind_dir": ""
     },
     {
-      "date": "2026-09-14",
+      "date": "2026-09-19",
       "tmax": null,
       "tmin": null,
       "rain": 0.0,
@@ -37,7 +37,7 @@
       "wind_dir": ""
     },
     {
-      "date": "2026-09-15",
+      "date": "2026-09-20",
       "tmax": null,
       "tmin": null,
       "rain": 0.0,
