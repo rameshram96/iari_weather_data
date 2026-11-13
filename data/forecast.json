@@ -1,43 +1,43 @@
 {
-  "generated": "2026-11-12T10:20:45Z",
+  "generated": "2026-11-13T10:01:19Z",
   "advisory": "",
   "weekly_rain_mm": null,
   "days": [
     {
-      "date": "2026-11-12",
-      "tmax": null,
-      "tmin": null,
-      "rain": 0.0,
-      "cloud": null,
-      "rh_max": null,
-      "rh_min": null,
-      "wind": null,
-      "wind_dir": ""
-    },
-    {
-      "date": "2026-11-13",
-      "tmax": null,
-      "tmin": null,
-      "rain": 0.0,
-      "cloud": null,
-      "rh_max": null,
-      "rh_min": null,
-      "wind": null,
-      "wind_dir": ""
-    },
-    {
-      "date": "2026-11-14",
-      "tmax": null,
-      "tmin": null,
-      "rain": 0.0,
-      "cloud": null,
-      "rh_max": null,
-      "rh_min": null,
-      "wind": null,
-      "wind_dir": ""
-    },
-    {
       "date": "2026-11-15",
+      "tmax": null,
+      "tmin": null,
+      "rain": 0.0,
+      "cloud": null,
+      "rh_max": null,
+      "rh_min": null,
+      "wind": null,
+      "wind_dir": ""
+    },
+    {
+      "date": "2026-11-16",
+      "tmax": null,
+      "tmin": null,
+      "rain": 0.0,
+      "cloud": null,
+      "rh_max": null,
+      "rh_min": null,
+      "wind": null,
+      "wind_dir": ""
+    },
+    {
+      "date": "2026-11-17",
+      "tmax": null,
+      "tmin": null,
+      "rain": 0.0,
+      "cloud": null,
+      "rh_max": null,
+      "rh_min": null,
+      "wind": null,
+      "wind_dir": ""
+    },
+    {
+      "date": "2026-11-18",
       "tmax": null,
       "tmin": null,
       "rain": 0.0,
